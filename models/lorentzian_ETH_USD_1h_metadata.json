@@ -2,7 +2,7 @@
     "symbol": "ETH/USD",
     "timeframe": "1h",
     "model_type": "lorentzian",
-    "accuracy": 0.5,
+    "accuracy": 0.4791666666666667,
     "features": [
         "close",
         "volume",
@@ -11,5 +11,5 @@
         "MACD",
         "MACD_Hist"
     ],
-    "trained_date": "2025-06-19T01:41:31.450507"
+    "trained_date": "2025-06-19T14:26:10.943437"
 }

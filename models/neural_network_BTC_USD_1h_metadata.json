@@ -2,7 +2,7 @@
     "symbol": "BTC/USD",
     "timeframe": "1h",
     "model_type": "neural_network",
-    "accuracy": 0.5416666865348816,
+    "accuracy": 0.5,
     "features": [
         "open",
         "high",
@@ -21,5 +21,5 @@
         "Upper_Band",
         "Lower_Band"
     ],
-    "trained_date": "2025-06-19T01:41:15.210383"
+    "trained_date": "2025-06-19T14:25:58.699254"
 }

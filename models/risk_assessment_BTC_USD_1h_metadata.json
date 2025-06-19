@@ -2,7 +2,7 @@
     "symbol": "BTC/USD",
     "timeframe": "1h",
     "model_type": "risk_assessment",
-    "accuracy": 0.9791666666666666,
+    "accuracy": 0.9930555555555556,
     "features": [
         "close",
         "Daily_Return",
@@ -10,5 +10,5 @@
         "SMA_20",
         "RSI"
     ],
-    "trained_date": "2025-06-19T01:41:15.434903"
+    "trained_date": "2025-06-19T14:25:59.153866"
 }
