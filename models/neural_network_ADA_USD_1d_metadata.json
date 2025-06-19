@@ -2,7 +2,7 @@
     "symbol": "ADA/USD",
     "timeframe": "1d",
     "model_type": "neural_network",
-    "accuracy": 0.5616438388824463,
+    "accuracy": 0.3835616409778595,
     "features": [
         "open",
         "high",
@@ -21,5 +21,5 @@
         "Upper_Band",
         "Lower_Band"
     ],
-    "trained_date": "2025-06-19T14:26:28.749677"
+    "trained_date": "2025-06-19T15:45:36.765441"
 }

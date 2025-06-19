@@ -2,7 +2,7 @@
     "symbol": "ETH/USD",
     "timeframe": "1d",
     "model_type": "neural_network",
-    "accuracy": 0.4794520437717438,
+    "accuracy": 0.4109589159488678,
     "features": [
         "open",
         "high",
@@ -21,5 +21,5 @@
         "Upper_Band",
         "Lower_Band"
     ],
-    "trained_date": "2025-06-19T14:26:16.387438"
+    "trained_date": "2025-06-19T15:45:22.780611"
 }
