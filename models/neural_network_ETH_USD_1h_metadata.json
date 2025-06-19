@@ -1,0 +1,25 @@
+{
+    "symbol": "ETH/USD",
+    "timeframe": "1h",
+    "model_type": "neural_network",
+    "accuracy": 0.5069444179534912,
+    "features": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "SMA_20",
+        "SMA_50",
+        "EMA_12",
+        "EMA_26",
+        "RSI",
+        "MACD",
+        "Signal_Line",
+        "MACD_Hist",
+        "Middle_Band",
+        "Upper_Band",
+        "Lower_Band"
+    ],
+    "trained_date": "2025-06-19T01:41:31.425815"
+}

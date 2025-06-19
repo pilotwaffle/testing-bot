@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Testing Interface</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-button">← Back to Dashboard</a>
+        <h1>API Testing Interface</h1>
+        <p>Test all trading bot API endpoints with real responses</p>
+
+        <div class="endpoint">
+            <h3>GET /api/status</h3>
+            <p>Get current bot status and metrics</p>
+            <button class="test-button" onclick="testEndpoint('/api/status', 'GET', null, 'status-response')">Test Status</button>
+            <div class="response" id="status-response">Click to test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>POST /api/start</h3>
+            <p>Start automated trading</p>
+            <button class="test-button" onclick="testEndpoint('/api/start', 'POST', null, 'start-response')">Test Start</button>
+            <div class="response" id="start-response">Click to test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>POST /api/stop</h3>
+            <p>Stop automated trading</p>
+            <button class="test-button" onclick="testEndpoint('/api/stop', 'POST', null, 'stop-response')">Test Stop</button>
+            <div class="response" id="stop-response">Click to test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>GET /api/positions</h3>
+            <p>Get current trading positions</p>
+            <button class="test-button" onclick="testEndpoint('/api/positions', 'GET', null, 'positions-response')">Test Positions</button>
+            <div class="response" id="positions-response">Click to test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>GET /api/market-data</h3>
+            <p>Get live market data</p>
+            <button class="test-button" onclick="testEndpoint('/api/market-data', 'GET', null, 'market-response')">Test Market Data</button>
+            <div class="response" id="market-response">Click to test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>POST /api/chat</h3>
+            <p>Chat with trading bot</p>
+            <input type="text" id="chat-message" placeholder="Enter message..." class="api-input">
+            <button class="test-button" onclick="testChat()">Test Chat</button>
+            <div class="response" id="chat-response">Enter a message and click test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>GET /api/health</h3>
+            <p>System health check</p>
+            <button class="test-button" onclick="testEndpoint('/api/health', 'GET', null, 'health-response')">Test Health</button>
+            <div class="response" id="health-response">Click to test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>GET /api/strategies</h3>
+            <p>Get available and active strategies</p>
+            <button class="test-button" onclick="testEndpoint('/api/strategies', 'GET', null, 'strategies-response')">Test Strategies</button>
+            <div class="response" id="strategies-response">Click to test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>GET /api/notifications</h3>
+            <p>Get notification status and history</p>
+            <button class="test-button" onclick="testEndpoint('/api/notifications', 'GET', null, 'notifications-response')">Test Notifications</button>
+            <div class="response" id="notifications-response">Click to test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>GET /api/ml/test</h3>
+            <p>Test ML system functionality</p>
+            <button class="test-button" onclick="testEndpoint('/api/ml/test', 'GET', null, 'ml-test-response')">Test ML System</button>
+            <div class="response" id="ml-test-response">Click to test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>POST /api/notifications/send</h3>
+            <p>Send custom notification</p>
+            <input type="text" id="notif-title" placeholder="Notification title..." class="api-input">
+            <input type="text" id="notif-message" placeholder="Notification message..." class="api-input">
+            <button class="test-button" onclick="testCustomNotification()">Test Custom Notification</button>
+            <div class="response" id="custom-notif-response">Enter title and message, then click test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>POST /api/strategies/add</h3>
+            <p>Add a new strategy</p>
+            <input type="text" id="strategy-name" placeholder="Strategy name..." class="api-input">
+            <button class="test-button" onclick="testAddStrategy()">Test Add Strategy</button>
+            <div class="response" id="add-strategy-response">Enter strategy name and click test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>POST /api/strategies/remove</h3>
+            <p>Remove a strategy</p>
+            <input type="text" id="remove-strategy-name" placeholder="Strategy name to remove..." class="api-input">
+            <button class="test-button" onclick="testRemoveStrategy()">Test Remove Strategy</button>
+            <div class="response" id="remove-strategy-response">Enter strategy name and click test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>GET /api/ai/status</h3>
+            <p>Check AI system status</p>
+            <button class="test-button" onclick="testEndpoint('/api/ai/status', 'GET', null, 'ai-status-response')">Test AI Status</button>
+            <div class="response" id="ai-status-response">Click to test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>POST /api/ai/analyze</h3>
+            <p>AI-powered market analysis</p>
+            <button class="test-button" onclick="testEndpoint('/api/ai/analyze', 'POST', null, 'ai-analyze-response')">Test AI Analysis</button>
+            <div class="response" id="ai-analyze-response">Click to test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>POST /api/ai/ask</h3>
+            <p>Ask AI a trading question</p>
+            <input type="text" id="ai-question" placeholder="Enter your question..." class="api-input">
+            <button class="test-button" onclick="testAIQuestion()">Test AI Question</button>
+            <div class="response" id="ai-question-response">Enter a question and click test...</div>
+        </div>
+
+        <div class="endpoint">
+            <h3>POST /api/ml/train</h3>
+            <p>Train ML models</p>
+            <select id="model-type" class="api-input">
+                <option value="neural_network">Neural Network</option>
+                <option value="lorentzian">Lorentzian Classifier</option>
+                <option value="social_sentiment">Social Sentiment</option>
+                <option value="risk_assessment">Risk Assessment</option>
+            </select>
+            <button class="test-button" onclick="testMLTrain()">Test ML Training</button>
+            <div class="response" id="ml-response">Select model type and click test...</div>
+        </div>
+    </div>
+
+    <script src="/static/js/api_test.js"></script>
+</body>
+</html>

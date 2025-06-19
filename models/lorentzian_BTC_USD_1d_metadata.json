@@ -1,0 +1,15 @@
+{
+    "symbol": "BTC/USD",
+    "timeframe": "1d",
+    "model_type": "lorentzian",
+    "accuracy": 0.4931506849315068,
+    "features": [
+        "close",
+        "volume",
+        "SMA_20",
+        "RSI",
+        "MACD",
+        "MACD_Hist"
+    ],
+    "trained_date": "2025-06-19T01:41:22.352912"
+}

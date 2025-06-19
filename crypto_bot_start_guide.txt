@@ -1,0 +1,154 @@
+crypto_bot_start_guide.txt
+---
+
+# Crypto Trading Bot - Getting Started Guide
+
+This guide will walk you through setting up, configuring, and running your algorithmic crypto trading bot.
+
+## 1. Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+-   **Python 3.11:** This bot is developed with Python 3.11. You can download it from python.org. Ensure `pip` is also installed (it usually comes with Python).
+-   **Terminal/Command Prompt:** You'll need to use your system's command line interface.
+
+## 2. Initial Setup
+
+1.  **Navigate to Project Folder:** Open your terminal/command prompt and change your directory to the bot's main folder (e.g., `E:\Trade Chat Bot\G Trading Bot`).
+    ```bash
+    cd "E:\Trade Chat Bot\G Trading Bot"
+    ```
+
+2.  **Create a Virtual Environment:** It's highly recommended to use a virtual environment to manage project dependencies and avoid conflicts with other Python projects.
+    ```bash
+    python -m venv venv
+    ```
+
+3.  **Activate the Virtual Environment:**
+    -   **Windows Command Prompt:**
+        ```bash
+        .\venv\Scripts\activate
+        ```
+        (If "The system cannot find the path specified" error occurs, check `.\venv\Scripts\activate.bat` or `.\venv\Scripts\Activate.ps1` and use the correct file name.)
+    -   **Linux/macOS Terminal:**
+        ```bash
+        source venv/bin/activate
+        ```
+    You should see `(venv)` at the beginning of your command prompt line when the environment is active.
+
+4.  **Install Dependencies:** With your virtual environment active, install all required Python libraries.
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+## 3. Configuration (.env file)
+
+The `.env` file is crucial for your bot's settings and securely storing API keys.
+
+1.  **Locate/Create `.env`:** In your bot's main folder, you should find a file named `.env`. If it's `example.env`, rename it to `.env`.
+2.  **Edit `.env`:** Open the `.env` file in a text editor (like Notepad++, VS Code, Sublime Text). Fill in the following essential settings:
+
+    -   **API Keys (Recommended):**
+        -   `APCA_API_KEY_ID`, `APCA_API_SECRET_KEY`: Your Alpaca paper or live trading API keys. Essential if you want the bot to simulate or place trades.
+        -   `COINMARKETCAP_API_KEY`: (Optional) Your CoinMarketCap API key.
+        -   `GOOGLE_AI_API_KEY`: (Optional) Your Google AI API key for advanced chatbot features.
+        -   **Remember: Replace placeholder values (e.g., `YOUR_API_KEY_HERE`) with your actual keys.**
+
+    -   **Default Exchange:**
+        -   `DEFAULT_EXCHANGE=kraken`: Set this to your preferred exchange (e.g., `kraken`, `coinbase`, `binance`). This affects data fetching.
+            -   *Note: Binance might block certain IPs (Error 451). Kraken or Coinbase often work well for USD pairs.*
+
+    -   **Default Training Symbols:**
+        -   `DEFAULT_TRAINING_SYMBOLS=BTC/USD,ETH/USD,ADA/USD`: These are the pairs your bot will train on and fetch data for. Adjust based on what your chosen `DEFAULT_EXCHANGE` offers (e.g., Kraken usually uses `/USD`, while Binance uses `/USDT`).
+
+    -   **Dashboard Login (IMPORTANT: Change for production!):**
+        -   `APP_USER_ID=admin`
+        -   `APP_PASSWORD=admin123`
+        -   **Change these if you plan to expose your dashboard to anyone else!**
+
+    -   **Notification Settings:** Fill in details for Slack, Email, Discord, or Twilio if you want external notifications.
+
+## 4. Initial Cleanup & ML Model Training
+
+It's good practice to clear any old cache or models, and then train your initial ML models.
+
+1.  **Clear Generated Files:** This removes old models, cache, and logs.
+    -   Ensure Uvicorn is **NOT RUNNING** for this step to allow log files to be deleted. Press `Ctrl + C` in the Uvicorn terminal if it is running.
+    ```bash
+    del /s /q __pycache__  # Clears Python cache
+    del /s /q logs         # Clears log files (will warn if in use, but try)
+    del /s /q models       # Clears saved ML models
+    del /s /q data\ohlcv_cache # Clears market data cache
+    ```
+
+2.  **Train Initial ML Models:** This step fetches historical data, processes it, and trains your ML models (Neural Network, Lorentzian, Risk Assessment). These models are essential for the `MLStrategy` to function.
+    -   Ensure your virtual environment is active.
+    ```bash
+    python train_models.py --full-train
+    ```
+    -   **Observe Output:** This process will take some time. You'll see logs about data fetching (from your chosen exchange or demo data if exchange fails) and model training progress.
+    -   *If you see errors related to `NoneType` or `markets_loaded` during this step, it means your `core/data_fetcher.py` file is not the latest version provided, or your chosen exchange/symbol combination is problematic. Go back and meticulously re-copy the `core/data_fetcher.py` code, clear `__pycache__`, and retry.*
+
+## 5. Run the Bot Server
+
+Now you can start your trading bot's web server.
+
+1.  **Activate Virtual Environment:** (If you closed your terminal or opened a new one).
+    ```bash
+    .\venv\Scripts\activate
+    ```
+2.  **Start Uvicorn:**
+    ```bash
+    uvicorn main:app --reload
+    ```
+    -   **Observe Output:** You should see logs indicating the application starting up, the trading engine initializing, and data feeds starting. Eventually, "Application startup complete." will appear.
+    -   *If you see repeating errors related to `NoneType` in `_feed_loop`, your `core/data_fetcher.py` file is not the latest version, or `__pycache__` was not fully cleared. Go back and confirm in Section 4 Step 2.*
+
+## 6. Verify Bot & Dashboard Functionality
+
+With the Uvicorn server running, you can verify your bot's functionality.
+
+1.  **Automated Tests (Verify Backend & Frontend Core):**
+    -   Open a **new terminal/command prompt** (keep the Uvicorn terminal running).
+    -   **Activate your virtual environment** in this new terminal.
+    ```bash
+    .\venv\Scripts\activate
+    ```
+    -   Run the automated test suite:
+    ```bash
+    python test_enhanced_system.py
+    ```
+    -   **Observe Results:** You are aiming for `📊 OVERALL RESULT: 28/28 tests passed (100.0%)`. If you achieve this, your bot's core functionality is verified.
+
+2.  **Manual Dashboard Inspection (Verify UI & Interaction):**
+    -   Open your web browser and navigate to `http://127.0.0.1:8000`.
+    -   **Hard Refresh:** Press `Ctrl + F5` (Windows/Linux) or `Cmd + Shift + R` (Mac) to ensure your browser loads the latest dashboard files.
+    -   **Check Dashboard Sections:**
+        -   **Account Summary:** Should show balances and positions.
+        -   **Market Data:** Should populate with live prices from your chosen exchange.
+        -   **Active Strategies:** Should initially be empty.
+        -   **Machine Learning Models:** Should list your trained models with their performance metrics.
+        -   **Add New Strategy:**
+            -   Select a "Strategy Type" from the dropdown (e.g., `MLStrategy`).
+            -   Observe the "Strategy ID" auto-populating.
+            -   Observe the dynamic configuration fields appear.
+            -   Fill in any required unique fields and click "Add Strategy." Confirm it appears under "Active Strategies."
+        -   **Bot Chat:**
+            -   Type `help`, `status`, `balance`, `market`, `models`. Confirm the bot responds.
+            -   (If `GOOGLE_AI_API_KEY` is configured) Try asking a general market question (e.g., "What's the outlook for Bitcoin tomorrow?").
+        -   **Start/Stop Bot Buttons:** Click these, observe the dashboard status change, and look for corresponding logs in your Uvicorn terminal.
+
+## 7. Next Steps
+
+-   **Fine-tune Strategy:** Modify your Python strategy files (`strategies/ml_strategy.py`, etc.) to implement your desired trading logic and risk management.
+-   **TradingView Integration:** If desired, set up TradingView alerts with webhooks to send signals directly to your bot (requires making your bot publicly accessible via tools like Ngrok).
+-   **Live Trading:** If confident, switch to live trading (start with small amounts and rigorous monitoring).
+
+## 8. Troubleshooting Tips
+
+-   **"Failed to move/clean logs" Warning:** This is normal if Uvicorn is running and holding the log file. It doesn't prevent cleanup.
+-   **"404 Not Found" (API):** Often means the backend isn't serving the endpoint, or the frontend is requesting the wrong URL. Check Uvicorn logs for errors, and verify the paths in your `main.py`.
+-   **"Loading..." (Dashboard):** Indicates JavaScript cannot fetch data. Check browser console for JS errors, and Network tab for failed API requests.
+-   **Persistent Errors:** Always clear `__pycache__` and restart Uvicorn.
+
+---

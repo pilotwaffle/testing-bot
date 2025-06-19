@@ -1,0 +1,14 @@
+{
+    "symbol": "ADA/USD",
+    "timeframe": "1d",
+    "model_type": "risk_assessment",
+    "accuracy": 0.547945205479452,
+    "features": [
+        "close",
+        "Daily_Return",
+        "Volatility",
+        "SMA_20",
+        "RSI"
+    ],
+    "trained_date": "2025-06-19T01:41:55.873461"
+}

@@ -1,0 +1,15 @@
+{
+    "symbol": "ADA/USD",
+    "timeframe": "1h",
+    "model_type": "lorentzian",
+    "accuracy": 0.4722222222222222,
+    "features": [
+        "close",
+        "volume",
+        "SMA_20",
+        "RSI",
+        "MACD",
+        "MACD_Hist"
+    ],
+    "trained_date": "2025-06-19T01:41:48.587705"
+}

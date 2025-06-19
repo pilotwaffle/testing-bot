@@ -1,0 +1,46 @@
+{
+    "trading": {
+        "max_open_trades": 3,
+        "stake_amount": 100,
+        "dry_run": true,
+        "dry_run_wallet": 10000,
+        "timeframe": "1h"
+    },
+    "exchange": {
+        "name": "kraken",
+        "sandbox": true,
+        "api_key": "",
+        "api_secret": "",
+        "enabled": false
+    },
+    "strategy": {
+        "name": "MLStrategy",
+        "timeframe": "1h",
+        "default_symbol": "BTC/USD"
+    },
+    "risk_management": {
+        "max_position_size": 0.1,
+        "max_daily_loss": 0.05,
+        "stop_loss_percent": 0.02,
+        "take_profit_percent": 0.05
+    },
+    "database": {
+        "enabled": false,
+        "url": "sqlite:///trading_bot.db"
+    },
+    "backtesting": {
+        "enabled": true,
+        "initial_balance": 10000,
+        "commission": 0.001
+    },
+    "optimization": {
+        "enabled": true,
+        "max_trials": 100,
+        "timeout_minutes": 30
+    },
+    "notifications": {
+        "enabled": true,
+        "discord_webhook": "",
+        "email_enabled": false
+    }
+}

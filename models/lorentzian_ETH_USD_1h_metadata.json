@@ -1,0 +1,15 @@
+{
+    "symbol": "ETH/USD",
+    "timeframe": "1h",
+    "model_type": "lorentzian",
+    "accuracy": 0.5,
+    "features": [
+        "close",
+        "volume",
+        "SMA_20",
+        "RSI",
+        "MACD",
+        "MACD_Hist"
+    ],
+    "trained_date": "2025-06-19T01:41:31.450507"
+}

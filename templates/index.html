@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ app_name }} Dashboard</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>{{ app_name }}</h1>
+            <p>Welcome, {{ user_id }}!</p>
+        </header>
+
+        <div class="status-bar">
+            <h2>Bot Status: <span id="bot-status" class="status stopped">Stopped</span></h2>
+            <div>
+                <button id="start-bot-btn" class="button success">Start Bot</button>
+                <button id="stop-bot-btn" class="button danger">Stop Bot</button>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Account Summary</h3>
+                <div class="metrics">
+                    <div class="metric">
+                        <h4>Fictional Cash (USD)</h4>
+                        <p id="total-value">$0.00</p>
+                    </div>
+                    <div class="metric">
+                        <h4>USDT Balance</h4>
+                        <p id="usdt-balance">$0.00</p>
+                    </div>
+                    <div class="metric">
+                        <h4>Open Positions</h4>
+                        <p id="open-positions-count">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Market Data</h3>
+                <div id="market-data-container" class="metrics">
+                    <!-- Market data will be injected here by JavaScript -->
+                    <div class="metric">
+                        <h4>BTC/USDT</h4>
+                        <p id="btc-usdt-price">Loading...</p>
+                    </div>
+                    <div class="metric">
+                        <h4>ETH/USDT</h4>
+                        <p id="eth-usdt-price">Loading...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Active Strategies</h3>
+                <div id="active-strategies-container">
+                    <p>No active strategies.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Performance Metrics</h3>
+                <div id="performance-metrics-container">
+                    <p>Loading performance...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Strategy Add Form - MODIFIED -->
+        <div class="card ml-section">
+            <h3>Add New Strategy</h3>
+            <div class="strategy-add-form">
+                <label for="strategy-type">Strategy Type:</label>
+                <select id="strategy-type" class="api-input">
+                    <option value="">-- Select a strategy type --</option>
+                    <!-- Options populated by JS -->
+                </select>
+
+                <label for="strategy-id">Strategy ID (auto-generated for MLStrategy):</label>
+                <input type="text" id="strategy-id" class="api-input" placeholder="Unique ID for this instance">
+
+                <div id="strategy-config-inputs" style="margin-top: 15px;">
+                    <!-- Dynamic configuration inputs and MODEL TYPE dropdown for MLStrategy will be generated here -->
+                    <p>Select a strategy type above to see its configuration options.</p>
+                </div>
+
+                <button id="add-strategy-btn" class="button success">Add Strategy</button>
+            </div>
+        </div>
+        <!-- END Strategy Add Form -->
+
+
+        <div class="card ml-section">
+            <h3>Machine Learning Models</h3>
+            <div class="ml-models" id="ml-models-container">
+                <p>Loading ML model status...</p>
+            </div>
+            <button id="train-models-btn" class="button warning">Train All Models</button>
+        </div>
+
+        <div class="chat-container card">
+            <h3>Bot Chat</h3>
+            <div class="chat-messages" id="chat-messages">
+                <!-- Chat messages will appear here -->
+            </div>
+            <div class="chat-input-container">
+                <input type="text" id="chat-input" class="chat-input" placeholder="Type your message...">
+                <button id="send-chat-btn" class="button">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Your Company. All rights reserved.</p>
+    </footer>
+
+    <!-- JavaScript for dynamic content -->
+    <script src="/static/js/script.js"></script>
+</body>
+</html>

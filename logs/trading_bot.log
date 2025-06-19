@@ -1,0 +1,132 @@
+2025-06-19 01:20:05,294 - crypto-bot - INFO - Main application logger configured.
+2025-06-19 01:20:05,311 - crypto-bot - INFO - Application starting up...
+2025-06-19 01:20:05,436 - crypto-bot - INFO - Trading engine and chatbot initialized.
+2025-06-19 01:20:05,437 - crypto-bot - INFO - Starting trading engine and data feeds now...
+2025-06-19 01:20:09,078 - crypto-bot - INFO - WebSocket client disconnected.
+2025-06-19 01:20:11,184 - crypto-bot - INFO - WebSocket client disconnected.
+2025-06-19 01:24:02,915 - crypto-bot - INFO - Application shutting down...
+2025-06-19 01:24:07,786 - crypto-bot - INFO - Application shutdown complete.
+2025-06-19 01:24:17,018 - crypto-bot - INFO - Main application logger configured.
+2025-06-19 01:24:17,018 - crypto-bot - INFO - Application starting up...
+2025-06-19 01:24:17,069 - crypto-bot - INFO - Trading engine and chatbot initialized.
+2025-06-19 01:24:17,069 - crypto-bot - INFO - Starting trading engine and data feeds now...
+2025-06-19 01:24:31,218 - crypto-bot - INFO - WebSocket client disconnected.
+2025-06-19 01:24:33,298 - crypto-bot - INFO - WebSocket client disconnected.
+2025-06-19 01:29:09,422 - crypto-bot - INFO - Application shutting down...
+2025-06-19 01:29:09,422 - crypto-bot - INFO - Application shutdown complete.
+2025-06-19 01:29:18,360 - crypto-bot - INFO - Main application logger configured.
+2025-06-19 01:29:18,360 - crypto-bot - INFO - Application starting up...
+2025-06-19 01:29:18,408 - crypto-bot - INFO - Trading engine and chatbot initialized.
+2025-06-19 01:29:18,408 - crypto-bot - INFO - Starting trading engine and data feeds now...
+2025-06-19 01:29:41,228 - crypto-bot - INFO - WebSocket client disconnected.
+2025-06-19 01:29:43,307 - crypto-bot - INFO - WebSocket client disconnected.
+2025-06-19 01:48:24,825 - crypto-bot - INFO - Application shutting down...
+2025-06-19 01:48:24,825 - crypto-bot - INFO - Application shutdown complete.
+2025-06-19 01:52:02,448 - crypto-bot - INFO - Main application logger configured.
+2025-06-19 01:52:02,469 - crypto-bot - INFO - Application starting up...
+2025-06-19 01:52:13,991 - crypto-bot - INFO - Trading engine and chatbot initialized.
+2025-06-19 01:52:13,991 - crypto-bot - INFO - Starting trading engine and data feeds now...
+2025-06-19 01:54:40,375 - crypto-bot - INFO - Application shutting down...
+2025-06-19 01:54:40,630 - crypto-bot - INFO - Application shutdown complete.
+2025-06-19 01:54:54,370 - crypto-bot - INFO - Main application logger configured.
+2025-06-19 01:54:54,386 - crypto-bot - INFO - Application starting up...
+2025-06-19 01:54:55,871 - crypto-bot - INFO - Trading engine and chatbot initialized.
+2025-06-19 01:54:55,886 - crypto-bot - INFO - Starting trading engine and data feeds now...
+2025-06-19 01:55:04,996 - crypto-bot - INFO - Main application logger configured.
+2025-06-19 01:55:05,014 - crypto-bot - INFO - Application starting up...
+2025-06-19 01:55:06,691 - crypto-bot - INFO - Trading engine and chatbot initialized.
+2025-06-19 01:55:06,691 - crypto-bot - INFO - Starting trading engine and data feeds now...
+2025-06-19 01:55:56,630 - crypto-bot - INFO - Application shutting down...
+2025-06-19 01:55:56,885 - crypto-bot - INFO - Application shutdown complete.
+2025-06-19 01:56:08,690 - crypto-bot - INFO - Main application logger configured.
+2025-06-19 01:56:08,706 - crypto-bot - INFO - Application starting up...
+2025-06-19 01:56:10,351 - crypto-bot - INFO - Trading engine and chatbot initialized.
+2025-06-19 01:56:10,351 - crypto-bot - INFO - Starting trading engine and data feeds now...
+2025-06-19 01:56:18,738 - crypto-bot - INFO - Main application logger configured.
+2025-06-19 01:56:18,755 - crypto-bot - INFO - Application starting up...
+2025-06-19 01:56:20,109 - crypto-bot - INFO - Trading engine and chatbot initialized.
+2025-06-19 01:56:20,109 - crypto-bot - INFO - Starting trading engine and data feeds now...
+2025-06-19 01:59:24,508 - crypto-bot - INFO - Application shutting down...
+2025-06-19 01:59:24,763 - crypto-bot - INFO - Application shutdown complete.
+2025-06-19 01:59:35,263 - crypto-bot - INFO - Main application logger configured.
+2025-06-19 01:59:35,276 - crypto-bot - INFO - Application starting up...
+2025-06-19 01:59:37,094 - crypto-bot - INFO - Trading engine and chatbot initialized.
+2025-06-19 01:59:37,094 - crypto-bot - INFO - Starting trading engine and data feeds now...
+2025-06-19 02:00:04,021 - crypto-bot - INFO - Application shutting down...
+2025-06-19 02:00:04,276 - crypto-bot - INFO - Application shutdown complete.
+2025-06-19 02:00:15,235 - crypto-bot - INFO - Main application logger configured.
+2025-06-19 02:00:15,262 - crypto-bot - INFO - Application starting up...
+2025-06-19 02:00:16,852 - crypto-bot - INFO - Trading engine and chatbot initialized.
+2025-06-19 02:00:16,853 - crypto-bot - INFO - Starting trading engine and data feeds now...
+2025-06-19 02:10:02,633 - crypto-bot - INFO - Application shutting down...
+2025-06-19 02:10:02,896 - crypto-bot - INFO - Application shutdown complete.
+2025-06-19 02:10:16,719 - crypto-bot - INFO - Main application logger configured.
+2025-06-19 02:10:16,728 - crypto-bot - INFO - Application starting up...
+2025-06-19 02:10:18,121 - crypto-bot - INFO - Trading engine and chatbot initialized.
+2025-06-19 02:10:18,121 - crypto-bot - INFO - Starting trading engine and data feeds now...
+2025-06-19 02:10:22,239 - crypto-bot - INFO - Application shutting down...
+2025-06-19 02:10:22,498 - crypto-bot - INFO - Application shutdown complete.
+2025-06-19 02:33:36,484 - crypto-bot - INFO - Enhanced main application logger configured.
+2025-06-19 02:33:36,496 - crypto-bot - INFO - Enhanced application starting up...
+2025-06-19 02:33:36,510 - crypto-bot - CRITICAL - Critical startup failure: Expecting value: line 1 column 1 (char 0)
+Traceback (most recent call last):
+  File "E:\Trade Chat Bot\G Trading Bot\main.py", line 135, in lifespan
+    config = config_manager_instance.load_config("config.json")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Trade Chat Bot\G Trading Bot\core\config.py", line 292, in load_config
+    file_config = json.load(f)
+                  ^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0\Lib\json\__init__.py", line 293, in load
+    return loads(fp.read(),
+           ^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0\Lib\json\__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0\Lib\json\decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0\Lib\json\decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+2025-06-19 02:53:32,603 - crypto-bot - INFO - Enhanced main application logger configured.
+2025-06-19 02:53:32,611 - crypto-bot - INFO - Enhanced application starting up...
+2025-06-19 02:53:32,611 - crypto-bot - INFO - Current working directory: E:\Trade Chat Bot\G Trading Bot
+2025-06-19 02:53:32,611 - crypto-bot - INFO - Config file exists: True
+2025-06-19 02:53:32,612 - crypto-bot - INFO - Config file size: 1087 bytes
+2025-06-19 02:53:32,612 - crypto-bot - INFO - Config file content length: 1042 characters
+2025-06-19 02:53:32,612 - crypto-bot - INFO - First 100 characters: {
+    "trading": {
+        "max_open_trades": 3,
+        "stake_amount": 100,
+        "dry_run": tru
+2025-06-19 02:53:32,612 - crypto-bot - ERROR - Config loading failed: TradingConfig.__init__() got an unexpected keyword argument 'timeframe'
+2025-06-19 02:53:32,613 - crypto-bot - INFO - Using fallback default configuration
+2025-06-19 02:53:32,613 - crypto-bot - INFO - Configuration management system initialized
+2025-06-19 02:53:32,613 - crypto-bot - WARNING - Database initialization failed: Expected string or URL object, got {}
+2025-06-19 02:53:32,613 - crypto-bot - CRITICAL - Critical startup failure: IndustrialTradingEngine.__init__() got an unexpected keyword argument 'database_manager'
+Traceback (most recent call last):
+  File "E:\Trade Chat Bot\G Trading Bot\main.py", line 191, in lifespan
+    trading_engine_instance = IndustrialTradingEngine(
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: IndustrialTradingEngine.__init__() got an unexpected keyword argument 'database_manager'
+2025-06-19 02:53:42,725 - crypto-bot - INFO - Enhanced main application logger configured.
+2025-06-19 02:53:42,733 - crypto-bot - INFO - Enhanced application starting up...
+2025-06-19 02:53:42,734 - crypto-bot - INFO - Current working directory: E:\Trade Chat Bot\G Trading Bot
+2025-06-19 02:53:42,734 - crypto-bot - INFO - Config file exists: True
+2025-06-19 02:53:42,734 - crypto-bot - INFO - Config file size: 1087 bytes
+2025-06-19 02:53:42,734 - crypto-bot - INFO - Config file content length: 1042 characters
+2025-06-19 02:53:42,735 - crypto-bot - INFO - First 100 characters: {
+    "trading": {
+        "max_open_trades": 3,
+        "stake_amount": 100,
+        "dry_run": tru
+2025-06-19 02:53:42,735 - crypto-bot - ERROR - Config loading failed: TradingConfig.__init__() got an unexpected keyword argument 'timeframe'
+2025-06-19 02:53:42,736 - crypto-bot - INFO - Using fallback default configuration
+2025-06-19 02:53:42,736 - crypto-bot - INFO - Configuration management system initialized
+2025-06-19 02:53:42,736 - crypto-bot - WARNING - Database initialization failed: Expected string or URL object, got {}
+2025-06-19 02:53:42,736 - crypto-bot - CRITICAL - Critical startup failure: IndustrialTradingEngine.__init__() got an unexpected keyword argument 'database_manager'
+Traceback (most recent call last):
+  File "E:\Trade Chat Bot\G Trading Bot\main.py", line 191, in lifespan
+    trading_engine_instance = IndustrialTradingEngine(
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: IndustrialTradingEngine.__init__() got an unexpected keyword argument 'database_manager'

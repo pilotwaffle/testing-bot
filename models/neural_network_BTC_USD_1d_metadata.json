@@ -1,0 +1,25 @@
+{
+    "symbol": "BTC/USD",
+    "timeframe": "1d",
+    "model_type": "neural_network",
+    "accuracy": 0.4109589159488678,
+    "features": [
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "SMA_20",
+        "SMA_50",
+        "EMA_12",
+        "EMA_26",
+        "RSI",
+        "MACD",
+        "Signal_Line",
+        "MACD_Hist",
+        "Middle_Band",
+        "Upper_Band",
+        "Lower_Band"
+    ],
+    "trained_date": "2025-06-19T01:41:22.320944"
+}
