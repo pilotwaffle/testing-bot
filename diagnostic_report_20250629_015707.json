@@ -1,0 +1,269 @@
+{
+    "timestamp": "2025-06-29T01:56:48.461196",
+    "summary": {
+        "scores": {
+            "ml_training": 75.0,
+            "chat": 100.0,
+            "status_button": 50.0,
+            "market_data": 0.0,
+            "frontend": 33.33333333333333,
+            "overall_health": 0.0
+        },
+        "overall_score": 43.05555555555555
+    },
+    "details": {
+        "ml_training": [
+            {
+                "name": "ML Engine Status",
+                "passed": true,
+                "status_code": 200,
+                "response_time": 2.081930637359619,
+                "error": null,
+                "data": {
+                    "status": "available",
+                    "models_available": 4,
+                    "models": [
+                        {
+                            "name": "Lorentzian Classifier",
+                            "status": "ready"
+                        },
+                        {
+                            "name": "Neural Network",
+                            "status": "ready"
+                        },
+                        {
+                            "name": "Social Sentiment",
+                            "status": "ready"
+                        },
+                        {
+                            "name": "Risk Assessment",
+                            "status": "ready"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "ML Models List",
+                "passed": false,
+                "status_code": 404,
+                "response_time": 0.004993915557861328,
+                "error": "Expected status 200, but got 404.",
+                "data": {
+                    "detail": "Not Found"
+                }
+            },
+            {
+                "name": "ML Test Endpoint",
+                "passed": false,
+                "status_code": 404,
+                "response_time": 0.0039670467376708984,
+                "error": "Expected status 200, but got 404.",
+                "data": {
+                    "detail": "Not Found"
+                }
+            },
+            {
+                "name": "Train Lorentzian Classifier",
+                "passed": true,
+                "status_code": 200,
+                "response_time": 0.004002571105957031,
+                "error": null,
+                "data": {
+                    "status": "success",
+                    "message": "Training lorentzian model (test mode)",
+                    "model_type": "lorentzian",
+                    "estimated_time": "2-5 minutes",
+                    "timestamp": "2025-06-29T01:56:50.563131"
+                }
+            },
+            {
+                "name": "Train Neural Network",
+                "passed": true,
+                "status_code": 200,
+                "response_time": 0.004002571105957031,
+                "error": null,
+                "data": {
+                    "status": "success",
+                    "message": "Training neural model (test mode)",
+                    "model_type": "neural",
+                    "estimated_time": "2-5 minutes",
+                    "timestamp": "2025-06-29T01:56:50.568027"
+                }
+            },
+            {
+                "name": "Train Social Sentiment",
+                "passed": true,
+                "status_code": 200,
+                "response_time": 0.005522251129150391,
+                "error": null,
+                "data": {
+                    "status": "success",
+                    "message": "Training sentiment model (test mode)",
+                    "model_type": "sentiment",
+                    "estimated_time": "2-5 minutes",
+                    "timestamp": "2025-06-29T01:56:50.574562"
+                }
+            },
+            {
+                "name": "Train Risk Assessment",
+                "passed": true,
+                "status_code": 200,
+                "response_time": 0.0056133270263671875,
+                "error": null,
+                "data": {
+                    "status": "success",
+                    "message": "Training risk model (test mode)",
+                    "model_type": "risk",
+                    "estimated_time": "2-5 minutes",
+                    "timestamp": "2025-06-29T01:56:50.581165"
+                }
+            },
+            {
+                "name": "Train All Models",
+                "passed": true,
+                "status_code": 200,
+                "response_time": 0.003993511199951172,
+                "error": null,
+                "data": {
+                    "status": "success",
+                    "message": "Training all model (test mode)",
+                    "model_type": "all",
+                    "estimated_time": "2-5 minutes",
+                    "timestamp": "2025-06-29T01:56:50.587173"
+                }
+            }
+        ],
+        "chat": [
+            {
+                "name": "Chat message 'Hello'",
+                "passed": true,
+                "status_code": 200,
+                "response_time": 0.004103422164916992,
+                "error": null,
+                "data": {
+                    "response": "I received your message: 'Hello'. I'm learning to provide better responses!",
+                    "message_type": "text",
+                    "intent": "general_chat",
+                    "response_time": 0.1,
+                    "timestamp": "2025-06-29T01:56:50.593082"
+                }
+            },
+            {
+                "name": "Chat message 'status'",
+                "passed": true,
+                "status_code": 200,
+                "response_time": 0.003222227096557617,
+                "error": null,
+                "data": {
+                    "response": "\ud83d\ude80 Elite Trading Bot is running! All systems operational.",
+                    "message_type": "text",
+                    "intent": "general_chat",
+                    "response_time": 0.1,
+                    "timestamp": "2025-06-29T01:56:50.597162"
+                }
+            },
+            {
+                "name": "Chat message 'help'",
+                "passed": true,
+                "status_code": 200,
+                "response_time": 0.0030121803283691406,
+                "error": null,
+                "data": {
+                    "response": "\ud83d\udca1 Available commands: status, help, portfolio, market. Ask me anything about trading!",
+                    "message_type": "text",
+                    "intent": "general_chat",
+                    "response_time": 0.1,
+                    "timestamp": "2025-06-29T01:56:50.601584"
+                }
+            },
+            {
+                "name": "Chat message 'market data'",
+                "passed": true,
+                "status_code": 200,
+                "response_time": 0.003001689910888672,
+                "error": null,
+                "data": {
+                    "response": "\ud83d\udcc8 Market data integration in progress. Check back soon!",
+                    "message_type": "text",
+                    "intent": "general_chat",
+                    "response_time": 0.1,
+                    "timestamp": "2025-06-29T01:56:50.604667"
+                }
+            },
+            {
+                "name": "WebSocket Connection",
+                "passed": true,
+                "error": null
+            }
+        ],
+        "status_button": [
+            {
+                "name": "Main Status",
+                "passed": false,
+                "status_code": 404,
+                "response_time": 0.004098653793334961,
+                "error": "Expected status 200, but got 404.",
+                "data": {
+                    "detail": "Not Found"
+                }
+            },
+            {
+                "name": "Health Check",
+                "passed": true,
+                "status_code": 200,
+                "response_time": 0.003689289093017578,
+                "error": null,
+                "data": {
+                    "status": "healthy",
+                    "components": {
+                        "server": true,
+                        "templates": true,
+                        "static_files": true,
+                        "dashboard_template": true,
+                        "chat_template": true
+                    },
+                    "timestamp": "2025-06-29T01:56:52.702017"
+                }
+            }
+        ],
+        "market_data": [
+            {
+                "name": "General Market Data",
+                "passed": false,
+                "status_code": 404,
+                "response_time": 0.0029854774475097656,
+                "error": "Expected status 200, but got 404.",
+                "data": {
+                    "detail": "Not Found"
+                }
+            },
+            {
+                "name": "Real-time Prices",
+                "passed": false,
+                "status_code": 404,
+                "response_time": 0.003063201904296875,
+                "error": "Expected status 200, but got 404.",
+                "data": {
+                    "detail": "Not Found"
+                }
+            }
+        ],
+        "frontend": [
+            {
+                "name": "Find 'ML Training Section' on Dashboard",
+                "passed": true
+            },
+            {
+                "name": "Find 'Status Button' on Dashboard",
+                "passed": false,
+                "error": "Element not found using id='status-button'"
+            },
+            {
+                "name": "Find 'Market Data Button' on Dashboard",
+                "passed": false,
+                "error": "Element not found using id='market-data-button'"
+            }
+        ],
+        "overall_health": {}
+    }
+}

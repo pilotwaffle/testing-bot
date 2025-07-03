@@ -1,0 +1,400 @@
+{
+  "analysis_date": "2025-06-28T18:58:21.558291",
+  "pre_assessment": {
+    "total_iterations": 153,
+    "avg_validation_accuracy": 0.9974910334768671,
+    "std_validation_accuracy": 0.004503469500948965,
+    "best_validation_accuracy": 1.0,
+    "worst_validation_accuracy": 0.9767441860465116,
+    "avg_profit_factor": 1.0502909005556142,
+    "consistency_score": 1.0,
+    "by_symbol": {
+      "mean": {
+        "ADA/USD": 0.9965962188133937,
+        "BTC/USD": 0.9974937330902459,
+        "ETH/USD": 0.998249736211454
+      },
+      "std": {
+        "ADA/USD": 0.005395722452461868,
+        "BTC/USD": 0.004764211882495708,
+        "ETH/USD": 0.003244492868977383
+      },
+      "count": {
+        "ADA/USD": 51,
+        "BTC/USD": 42,
+        "ETH/USD": 60
+      }
+    },
+    "by_timeframe": {
+      "mean": {
+        "1d": 0.9982733417842523,
+        "4h": 0.9969434176616973
+      },
+      "std": {
+        "1d": 0.004453688530352,
+        "4h": 0.004481436190077703
+      },
+      "count": {
+        "1d": 63,
+        "4h": 90
+      }
+    },
+    "by_model": {
+      "mean": {
+        "gradient_boosting": 0.9999314411079117,
+        "meta_ensemble": 0.9999424989937324,
+        "random_forest": 0.9925991603289569
+      },
+      "std": {
+        "gradient_boosting": 0.0004896084209888243,
+        "meta_ensemble": 0.0004106393208293283,
+        "random_forest": 0.004963165491009373
+      },
+      "count": {
+        "gradient_boosting": 51,
+        "meta_ensemble": 51,
+        "random_forest": 51
+      }
+    },
+    "top_performers": [
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "meta_ensemble",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "meta_ensemble",
+        "validation_accuracy": 1.0
+      }
+    ]
+  },
+  "enhanced_training_results": [
+    {
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_type": "gradient_boosting",
+      "train_accuracy": 0.9997080291970802,
+      "test_accuracy": 0.6441073512252042,
+      "accuracy": 0.6441073512252042,
+      "model_path": "models\\BTCUSD\\4h\\enhanced_gradient_boosting.pkl",
+      "training_samples": 3425,
+      "test_samples": 857,
+      "enhanced_features": true,
+      "extended_history": true
+    },
+    {
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_type": "gradient_boosting",
+      "train_accuracy": 1.0,
+      "test_accuracy": 0.6289381563593932,
+      "accuracy": 0.6289381563593932,
+      "model_path": "models\\BTCUSD\\4h\\enhanced_gradient_boosting.pkl",
+      "training_samples": 3425,
+      "test_samples": 857,
+      "enhanced_features": true,
+      "extended_history": true
+    },
+    {
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_type": "gradient_boosting",
+      "train_accuracy": 1.0,
+      "test_accuracy": 0.6406067677946324,
+      "accuracy": 0.6406067677946324,
+      "model_path": "models\\BTCUSD\\4h\\enhanced_gradient_boosting.pkl",
+      "training_samples": 3425,
+      "test_samples": 857,
+      "enhanced_features": true,
+      "extended_history": true
+    }
+  ],
+  "final_validation": {
+    "total_iterations": 11,
+    "avg_validation_accuracy": 1.0,
+    "std_validation_accuracy": 0.0,
+    "best_validation_accuracy": 1.0,
+    "worst_validation_accuracy": 1.0,
+    "avg_profit_factor": 1.0625083364865433,
+    "consistency_score": 1.0,
+    "by_symbol": {
+      "mean": {
+        "BTC/USD": 1.0
+      },
+      "std": {
+        "BTC/USD": 0.0
+      },
+      "count": {
+        "BTC/USD": 11
+      }
+    },
+    "by_timeframe": {
+      "mean": {
+        "4h": 1.0
+      },
+      "std": {
+        "4h": 0.0
+      },
+      "count": {
+        "4h": 11
+      }
+    },
+    "by_model": {
+      "mean": {
+        "gradient_boosting": 1.0
+      },
+      "std": {
+        "gradient_boosting": 0.0
+      },
+      "count": {
+        "gradient_boosting": 11
+      }
+    },
+    "top_performers": [
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      }
+    ]
+  },
+  "approved_models": [
+    {
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "validation_accuracy": 1.0
+    },
+    {
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "validation_accuracy": 1.0
+    },
+    {
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "validation_accuracy": 1.0
+    },
+    {
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "validation_accuracy": 1.0
+    },
+    {
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "validation_accuracy": 1.0
+    },
+    {
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "validation_accuracy": 1.0
+    },
+    {
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "validation_accuracy": 1.0
+    },
+    {
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "validation_accuracy": 1.0
+    },
+    {
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "validation_accuracy": 1.0
+    },
+    {
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "validation_accuracy": 1.0
+    }
+  ],
+  "deployment_recommendations": {
+    "high_confidence_models": [
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      }
+    ],
+    "medium_confidence_models": [],
+    "suggested_allocation": {
+      "high_confidence": 0.7,
+      "medium_confidence": 0.3
+    },
+    "confidence_threshold": 0.65,
+    "minimum_signal_confidence": 0.6
+  }
+}

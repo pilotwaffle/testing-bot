@@ -1,0 +1,259 @@
+# File: E:\Trade Chat Bot\G Trading Bot\bot_config.yaml
+# Location: E:\Trade Chat Bot\G Trading Bot\bot_config.yaml
+
+# 🚀 Elite Trading Bot V3.0 - Configuration File
+# Comprehensive Error Handling System Configuration
+
+# Exchange API Configurations
+exchanges:
+  kraken:
+    api_key: "${KRAKEN_API_KEY}"  # Set in environment variables
+    secret: "${KRAKEN_SECRET}"    # Set in environment variables
+    base_url: "https://api.kraken.com"
+    rate_limit_per_minute: 60
+    timeout_seconds: 30
+    max_retries: 3
+    circuit_breaker_threshold: 5
+    circuit_breaker_timeout: 60
+    priority: 1  # Primary exchange
+    enabled: true
+  
+  binance:
+    api_key: "${BINANCE_API_KEY}"
+    secret: "${BINANCE_SECRET}"
+    base_url: "https://api.binance.com"
+    rate_limit_per_minute: 1200
+    timeout_seconds: 30
+    max_retries: 3
+    circuit_breaker_threshold: 5
+    circuit_breaker_timeout: 60
+    priority: 2  # Fallback exchange
+    enabled: false  # Enable when you have API keys
+  
+  coinbase:
+    api_key: "${COINBASE_API_KEY}"
+    secret: "${COINBASE_SECRET}"
+    base_url: "https://api.exchange.coinbase.com"
+    rate_limit_per_minute: 100
+    timeout_seconds: 30
+    max_retries: 3
+    circuit_breaker_threshold: 5
+    circuit_breaker_timeout: 60
+    priority: 3  # Secondary fallback
+    enabled: false  # Enable when you have API keys
+
+# Error Handling Configuration
+error_handling:
+  log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  max_error_history: 1000  # Maximum number of errors to store in memory
+  health_check_interval: 60  # Seconds between health checks
+  enable_fallback: true  # Use fallback data sources when primary fails
+  enable_circuit_breaker: true  # Use circuit breakers to prevent cascade failures
+  enable_rate_limiting: true  # Handle rate limiting intelligently
+  notification_webhooks: []  # Add webhook URLs for error notifications
+
+# Monitoring and Alerting Configuration
+monitoring:
+  # Email Alerts
+  enable_email_alerts: false
+  email_recipients: []
+  # Example: ["trader@yourcompany.com", "admin@yourcompany.com"]
+  
+  # Slack Alerts
+  enable_slack_alerts: true
+  slack_webhook: "${SLACK_WEBHOOK_URL}"  # Set in environment variables
+  # Get webhook URL from: https://api.slack.com/incoming-webhooks
+  
+  # Discord Alerts
+  enable_discord_alerts: false
+  discord_webhook: "${DISCORD_WEBHOOK_URL}"  # Set in environment variables
+  
+  # Alert Triggers
+  alert_on_error_types: ["CRITICAL", "HIGH"]  # Which error severities trigger alerts
+  # Options: ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+
+# Trading Configuration
+trading:
+  # Default trading parameters
+  default_timeout: 30  # Seconds
+  max_position_size: 10000  # USD
+  risk_management:
+    max_daily_loss: 1000  # USD
+    max_drawdown: 0.05  # 5%
+    stop_loss_percentage: 0.02  # 2%
+    take_profit_percentage: 0.04  # 4%
+  
+  # Order management
+  order_retry_attempts: 2
+  order_timeout: 60  # Seconds
+  
+  # Portfolio limits
+  max_open_positions: 5
+  diversification_limit: 0.3  # Max 30% in any single asset
+
+# Market Data Configuration
+market_data:
+  # Primary data sources (in order of preference)
+  primary_sources: ["kraken", "binance", "coinbase"]
+  
+  # Fallback sources for market data
+  fallback_sources: ["coingecko", "coinmarketcap"]
+  
+  # Update intervals
+  price_update_interval: 5  # Seconds
+  orderbook_update_interval: 10  # Seconds
+  
+  # Data validation
+  price_deviation_threshold: 0.1  # 10% - reject prices that deviate too much
+  staleness_threshold: 300  # Seconds - reject data older than this
+
+# WebSocket Configuration
+websocket:
+  heartbeat_interval: 30  # Seconds
+  reconnection_attempts: 5
+  reconnection_delay: 5  # Seconds
+  message_queue_size: 1000
+
+# Security Configuration
+security:
+  # API key encryption (for production use)
+  encrypt_api_keys: false
+  encryption_key: "${ENCRYPTION_KEY}"  # Set in environment variables
+  
+  # Request signing
+  require_signed_requests: true
+  signature_timeout: 30  # Seconds
+  
+  # Rate limiting
+  global_rate_limit: 1000  # Requests per minute
+  per_endpoint_rate_limit: 100  # Requests per minute per endpoint
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_logging: true
+  log_file: "trading_bot.log"
+  max_log_file_size: 100  # MB
+  backup_count: 5  # Number of backup log files to keep
+  
+  # Structured logging for production
+  structured_logging: false
+  log_to_console: true
+  log_to_file: true
+
+# Performance Configuration
+performance:
+  # Async settings
+  max_concurrent_requests: 10
+  request_pool_size: 20
+  
+  # Caching
+  enable_caching: true
+  cache_ttl: 300  # Seconds
+  max_cache_size: 1000  # Number of cached items
+  
+  # Database connection pooling (if using database)
+  db_pool_size: 10
+  db_max_overflow: 20
+
+# Development/Testing Configuration
+development:
+  # Paper trading mode
+  paper_trading: true  # Set to false for live trading
+  
+  # Mock data for testing
+  use_mock_data: false
+  mock_data_file: "mock_market_data.json"
+  
+  # Debug settings
+  debug_mode: false
+  verbose_logging: false
+  
+  # Testing endpoints
+  enable_test_endpoints: true
+
+# Backup and Recovery Configuration
+backup:
+  # Data backup
+  enable_backup: true
+  backup_interval: 3600  # Seconds (1 hour)
+  backup_location: "./backups"
+  max_backups: 24  # Keep 24 backups (24 hours)
+  
+  # Error recovery
+  auto_recovery: true
+  recovery_timeout: 300  # Seconds
+  max_recovery_attempts: 3
+
+# External Services Configuration
+external_services:
+  # News APIs for sentiment analysis
+  news_api:
+    enabled: false
+    api_key: "${NEWS_API_KEY}"
+    update_interval: 3600  # Seconds
+  
+  # Social media sentiment
+  twitter_api:
+    enabled: false
+    api_key: "${TWITTER_API_KEY}"
+    api_secret: "${TWITTER_API_SECRET}"
+  
+  # Economic calendar
+  economic_calendar:
+    enabled: false
+    api_key: "${ECONOMIC_CALENDAR_API_KEY}"
+
+# Machine Learning Configuration
+ml:
+  # Model training
+  enable_ml_training: true
+  training_data_days: 30
+  retrain_interval: 86400  # Seconds (24 hours)
+  
+  # Model types
+  models:
+    neural_network:
+      enabled: true
+      hidden_layers: [64, 32, 16]
+      learning_rate: 0.001
+    
+    xgboost:
+      enabled: true
+      n_estimators: 100
+      max_depth: 6
+    
+    lorentzian:
+      enabled: true
+      lookback_period: 14
+
+# Environment-specific overrides
+environments:
+  development:
+    error_handling:
+      log_level: "DEBUG"
+    trading:
+      paper_trading: true
+    development:
+      debug_mode: true
+      verbose_logging: true
+  
+  staging:
+    trading:
+      paper_trading: true
+      max_position_size: 1000
+    monitoring:
+      enable_slack_alerts: true
+  
+  production:
+    error_handling:
+      log_level: "WARNING"
+    trading:
+      paper_trading: false  # LIVE TRADING - BE CAREFUL!
+    security:
+      encrypt_api_keys: true
+      require_signed_requests: true
+    monitoring:
+      enable_slack_alerts: true
+      enable_email_alerts: true

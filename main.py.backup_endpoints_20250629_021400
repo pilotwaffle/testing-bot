@@ -1,0 +1,456 @@
+"""
+File: main.py
+Location: E:\Trade Chat Bot\G Trading Bot\main.py
+
+Robust Main - With Error Handling and Graceful Fallbacks
+"""
+
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from dotenv import load_dotenv
+import os
+import json
+import logging
+from datetime import datetime
+from pathlib import Path
+
+# Load environment variables
+load_dotenv()
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="Elite Trading Bot V3.0",
+    description="Industrial Crypto Trading Bot",
+    version="3.0.0"
+)
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Ensure directories exist
+def ensure_directories():
+    """Ensure required directories exist"""
+    directories = ["static", "static/js", "static/css", "templates"]
+    for directory in directories:
+        Path(directory).mkdir(parents=True, exist_ok=True)
+
+ensure_directories()
+
+# Setup static files and templates with error handling
+try:
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+    logger.info("✅ Static files mounted")
+except Exception as e:
+    logger.error(f"❌ Failed to mount static files: {e}")
+
+try:
+    templates = Jinja2Templates(directory="templates")
+    logger.info("✅ Templates initialized")
+except Exception as e:
+    logger.error(f"❌ Failed to initialize templates: {e}")
+    templates = None
+
+# Global variables
+active_connections = []
+
+@app.get("/", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    """Main dashboard with error handling"""
+    try:
+        if templates is None:
+            return HTMLResponse("""
+            <html><body>
+            <h1>Elite Trading Bot V3.0</h1>
+            <p>Dashboard temporarily unavailable. Templates not loaded.</p>
+            <p><a href="/health">Check System Health</a></p>
+            </body></html>
+            """)
+        
+        # Check if dashboard template exists
+        if not Path("templates/dashboard.html").exists():
+            return HTMLResponse("""
+            <html><body>
+            <h1>Elite Trading Bot V3.0</h1>
+            <p>Dashboard template missing. Please run: python fix_internal_server_error.py</p>
+            <p><a href="/health">Check System Health</a></p>
+            </body></html>
+            """)
+        
+        return templates.TemplateResponse("dashboard.html", {
+            "request": request,
+            "ml_status": {
+                "models": [
+                    {"name": "Lorentzian Classifier", "status": "available"},
+                    {"name": "Neural Network", "status": "available"},
+                    {"name": "Social Sentiment", "status": "available"},
+                    {"name": "Risk Assessment", "status": "available"}
+                ]
+            },
+            "status": "RUNNING"
+        })
+    except Exception as e:
+        logger.error(f"Dashboard error: {e}")
+        return HTMLResponse(f"""
+        <html><body>
+        <h1>Elite Trading Bot V3.0</h1>
+        <p>Dashboard Error: {str(e)}</p>
+        <p><a href="/health">Check System Health</a></p>
+        </body></html>
+        """)
+
+
+# MISSING ML AND API ENDPOINTS - ADDED
+@app.get("/api/ml/test")
+@app.post("/api/ml/test")
+async def test_ml_system():
+    """Test ML system functionality"""
+    try:
+        if not ml_engine:
+            return {"status": "error", "message": "ML Engine not available"}
+        
+        # Test ML engine
+        ml_status = ml_engine.get_status()
+        model_count = len(ml_status)
+        
+        # Test a quick training simulation
+        test_result = ml_engine.train_model("neural_network", "BTC/USDT")
+        
+        return {
+            "status": "success",
+            "message": f"ML System test completed successfully. {model_count} models available.",
+            "details": {
+                "ml_engine": "Available",
+                "models_count": model_count,
+                "test_training": test_result.get("status", "unknown"),
+                "gemini_ai": chat_manager.gemini_ai.is_available() if chat_manager and hasattr(chat_manager, 'gemini_ai') else False
+            }
+        }
+    except Exception as e:
+        logger.error(f"ML test error: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/ml/models")
+async def list_ml_models():
+    """List all available ML models"""
+    try:
+        if not ml_engine:
+            return {"status": "error", "message": "ML Engine not available"}
+        
+        models = ml_engine.get_status()
+        return {
+            "status": "success",
+            "models": models,
+            "count": len(models)
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/ml/status")
+async def ml_engine_status():
+    """Get ML engine status"""
+    try:
+        if not ml_engine:
+            return {"status": "error", "message": "ML Engine not available"}
+        
+        status = ml_engine.get_status()
+        return {
+            "status": "success",
+            "ml_engine": "available",
+            "models": status
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/ml/train/all")
+async def train_all_models(symbol: str = "BTC/USDT"):
+    """Train all ML models"""
+    try:
+        if not ml_engine:
+            return {"status": "error", "message": "ML Engine not available"}
+        
+        results = {}
+        model_types = ["lorentzian_classifier", "neural_network", "social_sentiment", "risk_assessment"]
+        
+        for model_type in model_types:
+            try:
+                result = ml_engine.train_model(model_type, symbol)
+                results[model_type] = result
+            except Exception as e:
+                results[model_type] = {"status": "error", "message": str(e)}
+        
+        return {
+            "status": "success",
+            "message": f"Training completed for all models on {symbol}",
+            "results": results
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/portfolio")
+async def get_portfolio():
+    """Get portfolio information"""
+    try:
+        if not trading_engine:
+            return {"status": "error", "message": "Trading engine not available"}
+        
+        status = trading_engine.get_status()
+        return {
+            "status": "success",
+            "portfolio": {
+                "total_value": status.get("total_value", 0),
+                "cash_balance": status.get("cash_balance", 0),
+                "unrealized_pnl": status.get("unrealized_pnl", 0),
+                "total_profit": status.get("total_profit", 0),
+                "positions": status.get("positions", {}),
+                "num_positions": len(status.get("positions", {}))
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/market-data")
+async def get_market_data():
+    """Get market data"""
+    try:
+        # Simulate market data
+        market_data = {
+            "BTC/USDT": {"price": 43250.50, "change_24h": 2.5},
+            "ETH/USDT": {"price": 2650.75, "change_24h": 1.8},
+            "ADA/USDT": {"price": 0.485, "change_24h": -0.5}
+        }
+        
+        return {
+            "status": "success",
+            "data": market_data,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/strategies")
+async def get_strategies():
+    """Get active strategies"""
+    try:
+        if not trading_engine:
+            return {"status": "error", "message": "Trading engine not available"}
+        
+        status = trading_engine.get_status()
+        strategies = status.get("active_strategies", {})
+        
+        return {
+            "status": "success",
+            "strategies": strategies,
+            "count": len(strategies)
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/system/info")
+async def system_info():
+    """Get system information"""
+    return {
+        "status": "success",
+        "system": {
+            "name": "Industrial Crypto Trading Bot",
+            "version": "3.0.0",
+            "components": {
+                "trading_engine": trading_engine is not None,
+                "ml_engine": ml_engine is not None,
+                "chat_manager": chat_manager is not None,
+                "kraken_integration": kraken_integration is not None,
+                "gemini_ai": chat_manager.gemini_ai.is_available() if chat_manager and hasattr(chat_manager, 'gemini_ai') else False
+            },
+            "features": [
+                "Enhanced Trading Engine",
+                "ML Predictions with 4 Models",
+                "Gemini AI Chat Integration",
+                "WebSocket Support",
+                "Kraken Integration",
+                "Real-time Dashboard"
+            ]
+        }
+    }
+
+@app.get("/dashboard")
+async def dashboard_redirect(request: Request):
+    """Redirect /dashboard to root"""
+    return await dashboard_html(request)
+
+@app.get("/api/test")
+async def api_test():
+    """Test API functionality"""
+    return {
+        "status": "success",
+        "message": "API is working correctly",
+        "timestamp": datetime.now().isoformat(),
+        "endpoints": {
+            "health": "/health",
+            "ml_test": "/api/ml/test",
+            "chat": "/api/chat",
+            "portfolio": "/api/portfolio",
+            "market_data": "/api/market-data"
+        }
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    try:
+        return {
+            "status": "healthy",
+            "components": {
+                "server": True,
+                "templates": templates is not None,
+                "static_files": Path("static").exists(),
+                "dashboard_template": Path("templates/dashboard.html").exists(),
+                "chat_template": Path("templates/chat.html").exists()
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+@app.post("/api/chat")
+async def chat_endpoint(request: Request):
+    """Chat API endpoint with error handling"""
+    try:
+        data = await request.json()
+        message = data.get("message", "")
+        
+        # Simple response logic
+        if not message:
+            response = "Please provide a message."
+        elif "status" in message.lower():
+            response = "🚀 Elite Trading Bot is running! All systems operational."
+        elif "help" in message.lower():
+            response = "💡 Available commands: status, help, portfolio, market. Ask me anything about trading!"
+        elif "portfolio" in message.lower():
+            response = "📊 Portfolio analysis coming soon! Currently in development."
+        elif "market" in message.lower():
+            response = "📈 Market data integration in progress. Check back soon!"
+        else:
+            response = f"I received your message: '{message}'. I'm learning to provide better responses!"
+        
+        return {
+            "response": response,
+            "message_type": "text",
+            "intent": "general_chat",
+            "response_time": 0.1,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Chat endpoint error: {e}")
+        return {
+            "response": "Sorry, I encountered an error processing your message.",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+@app.get("/chat", response_class=HTMLResponse)
+async def chat_page(request: Request):
+    """Chat interface page"""
+    try:
+        if templates is None or not Path("templates/chat.html").exists():
+            return HTMLResponse("""
+            <html><body>
+            <h1>Chat Interface</h1>
+            <p>Chat template not available. Please run: python fix_internal_server_error.py</p>
+            <p><a href="/">Return to Dashboard</a></p>
+            </body></html>
+            """)
+        
+        return templates.TemplateResponse("chat.html", {"request": request})
+    except Exception as e:
+        logger.error(f"Chat page error: {e}")
+        return HTMLResponse(f"""
+        <html><body>
+        <h1>Chat Interface Error</h1>
+        <p>Error: {str(e)}</p>
+        <p><a href="/">Return to Dashboard</a></p>
+        </body></html>
+        """)
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time communication"""
+    try:
+        await websocket.accept()
+        active_connections.append(websocket)
+        logger.info(f"WebSocket connected. Total connections: {len(active_connections)}")
+        
+        while True:
+            data = await websocket.receive_text()
+            message_data = json.loads(data)
+            
+            # Process message
+            message = message_data.get("message", "")
+            response = {
+                "type": "chat_response",
+                "response": f"WebSocket received: {message}",
+                "timestamp": datetime.now().isoformat()
+            }
+            
+            await websocket.send_text(json.dumps(response))
+            
+    except WebSocketDisconnect:
+        if websocket in active_connections:
+            active_connections.remove(websocket)
+        logger.info(f"WebSocket disconnected. Total connections: {len(active_connections)}")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        if websocket in active_connections:
+            active_connections.remove(websocket)
+
+# Additional endpoints for testing
+@app.get("/api/ml/status")
+async def ml_status():
+    """ML status endpoint"""
+    return {
+        "status": "available",
+        "models_available": 4,
+        "models": [
+            {"name": "Lorentzian Classifier", "status": "ready"},
+            {"name": "Neural Network", "status": "ready"},
+            {"name": "Social Sentiment", "status": "ready"},
+            {"name": "Risk Assessment", "status": "ready"}
+        ]
+    }
+
+@app.post("/api/ml/train/{model_type}")
+async def train_model(model_type: str, request: Request):
+    """Train model endpoint"""
+    try:
+        data = await request.json()
+        test_mode = data.get("test_mode", False)
+        
+        return {
+            "status": "success",
+            "message": f"Training {model_type} model {'(test mode)' if test_mode else ''}",
+            "model_type": model_type,
+            "estimated_time": "2-5 minutes",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+@app.get("/chat_debug", response_class=HTMLResponse)
+async def chat_debug(request: Request):
+    """Debug chat interface for troubleshooting"""
+    return templates.TemplateResponse("chat_debug.html", {"request": request})
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

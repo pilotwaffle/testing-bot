@@ -1,0 +1,99 @@
+Enhanced Trading Bot Migration Report
+==================================================
+
+Migration Date: 2025-06-26 13:28:17
+Target Configuration: .env.enhanced
+Backup Directory: migration_backups
+
+Variables Migrated:
+--------------------
+ALPACA_PAPER_BASE_URL: https://paper-api.alpaca.markets
+ALPACA_STREAM_DATA_URL: wss://stream.data.alpaca.markets/v1beta3/crypto/us
+ALPACA_SYNC_INTERVAL_MINUTES: 5
+ALPHA_VANTAGE_API_KEY: your**************_key
+APCA_API_KEY_ID: PKXG************JQQR
+APCA_API_SECRET_KEY: K3zx********************************XzsK
+APP_NAME: Enhanced Trading Bot
+APP_PASSWORD: ********
+APP_USER_ID: admin
+BACKUP_DIR: backups/
+BACKUP_INTERVAL_HOURS: 24
+BROADCAST_INTERVAL_SECONDS: 15
+CACHE_TIMEOUT: 3600
+CCXT_AVAILABLE: true
+CHAT_MEMORY_SIZE: 25
+CHAT_PROACTIVE_INSIGHTS: true
+CHAT_VOICE_ENABLED: true
+COINMARKETCAP_API_KEY: your***********************here
+DATABASE_URL: sqlite:///data/enhanced_trading_bot.db
+DEBUG: false
+DEFAULT_EXCHANGE: kraken
+DEFAULT_MODEL_SAVE_PATH: models/
+DEFAULT_TRAINING_SYMBOLS: BTC/USD,ETH/USD,ADA/USD
+DEVELOPMENT_MODE: true
+DISCORD_WEBHOOK_URL: https://discord.com/api/webhooks/YOUR/DISCORD/WEBHOOK
+EMAIL_ENABLED: false
+EMERGENCY_STOP_LOSS: 0.15
+ERROR_NOTIFICATION_COOLDOWN: 300         # 5 minutes in seconds
+ERROR_RETRY_INTERVAL_SECONDS: 30
+FLASK_DEBUG: true
+GOOGLE_AI_API_KEY: your****************here
+GOOGLE_AI_ENABLED: true
+GOOGLE_AI_MODEL: gemini-pro
+INITIAL_CAPITAL: 10000
+JWT_SECRET: your**************************auth
+KRAKEN_API_KEY: 6NHk************************************************0bdD
+KRAKEN_SANDBOX: true
+KRAKEN_SECRET: wIW8********************************************************************************HQ==
+LIVE_TRADING_ENABLED: false
+LOG_LEVEL: INFO
+MAX_BACKUPS: 30
+MAX_PORTFOLIO_RISK: 0.10
+MAX_RISK_PER_TRADE: 0.02
+MIN_NOTIFICATION_PRIORITY: MEDIUM        # DEBUG, INFO, MEDIUM, HIGH, CRITICAL, EMERGENCY
+NEWS_API_KEY: your*********_key
+NOTIFICATION_HISTORY_MAX_LENGTH: 100
+NOTIFY_ERRORS: true
+NOTIFY_PERFORMANCE: true
+NOTIFY_STRATEGY_CHANGES: true
+NOTIFY_SYSTEM_EVENTS: true
+NOTIFY_TRADES: true
+PERFORMANCE_NOTIFICATION_INTERVAL: 3600  # 1 hour in seconds
+RATE_LIMIT_DELAY: 1.2
+RECIPIENT_EMAIL: alerts@yourdomain.com
+RECIPIENT_PHONE_NUMBER: your_recipient_phone_number_here
+REDIS_URL: redis://localhost:6379/0
+SECRET_KEY: your**********************************this
+SENDER_EMAIL: your_email@gmail.com
+SENDER_PASSWORD: your********************here
+SENTRY_DSN: your_sentry_dsn_for_error_tracking
+SLACK_CHANNEL: #trading-bot
+SLACK_USERNAME: EnhancedTradingBot
+SLACK_WEBHOOK_URL: https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
+SMTP_PORT: 587
+SMTP_SERVER: smtp.gmail.com
+STRATEGIES_DIR: strategies
+TELEGRAM_BOT_TOKEN: your***************oken
+TELEGRAM_CHAT_ID: your_telegram_chat_id
+TEST_MODE: false
+TRADE_NOTIFICATION_MIN_VALUE: 10.0
+TRADING_SYMBOLS: BTC/USD,ETH/USD,ADA/USD
+TRADING_TIMEFRAMES: 1h,4h,1d
+TWILIO_ACCOUNT_SID: your_twilio_account_sid_here
+TWILIO_AUTH_TOKEN: your*******************here
+TWILIO_PHONE_NUMBER: your_twilio_phone_number_here
+TWITTER_ACCESS_SECRET: your******************cret
+TWITTER_ACCESS_TOKEN: your*****************oken
+TWITTER_API_KEY: your************_key
+TWITTER_API_SECRET: your***************cret
+VERBOSE_LOGGING: false
+WORKER_PROCESSES: 1
+
+
+Next Steps:
+-----------
+1. Review the migrated .env file
+2. Update any placeholder values
+3. Test the configuration
+4. Run the setup script if needed
+5. Verify all API credentials

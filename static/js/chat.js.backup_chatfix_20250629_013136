@@ -1,0 +1,371 @@
+// static/js/chat.js - FIXED VERSION
+// Handles backend responses properly, no more "Error: undefined"
+
+let ws = null;
+const chatMessagesContainer = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+
+// Enhanced message handling with proper error handling
+class MessageHandler {
+    constructor() {
+        this.messageTypes = {
+            'text': this.renderTextMessage,
+            'trade_signal': this.renderTradeSignal,
+            'analysis': this.renderAnalysis,
+            'command_result': this.renderCommandResult,
+            'notification': this.renderNotification,
+            'error': this.renderError
+        };
+    }
+    
+    renderTextMessage(sender, content, metadata = {}) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender === 'You' ? 'user-message' : 'bot-message'}`;
+        
+        // Enhanced formatting with markdown-like support
+        const formattedContent = this.formatContent(content);
+        messageDiv.innerHTML = `
+            <div class="message-header">
+                <strong>${sender}:</strong>
+                <span class="timestamp">${new Date().toLocaleTimeString()}</span>
+            </div>
+            <div class="message-content">${formattedContent}</div>
+        `;
+        
+        return messageDiv;
+    }
+    
+    renderTradeSignal(sender, content, metadata = {}) {
+        return this.renderTextMessage(sender, content, metadata);
+    }
+    
+    renderAnalysis(sender, content, metadata = {}) {
+        return this.renderTextMessage(sender, content, metadata);
+    }
+    
+    renderCommandResult(sender, content, metadata = {}) {
+        return this.renderTextMessage(sender, content, metadata);
+    }
+    
+    renderNotification(sender, content, metadata = {}) {
+        return this.renderTextMessage(sender, content, metadata);
+    }
+    
+    renderError(sender, content, metadata = {}) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message error-message';
+        messageDiv.innerHTML = `
+            <div class="message-header">
+                <strong>Error:</strong>
+                <span class="timestamp">${new Date().toLocaleTimeString()}</span>
+            </div>
+            <div class="message-content" style="color: #ff6b6b;">${content}</div>
+        `;
+        return messageDiv;
+    }
+    
+    formatContent(content) {
+        if (!content || content === 'undefined' || content === undefined) {
+            return 'Sorry, I encountered an issue processing your request. Please try again.';
+        }
+        
+        // Convert string content to safe HTML
+        return String(content)
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            .replace(/\n/g, '<br>')
+            .replace(/(\$\d+(?:\.\d{2})?)/g, '<span class="price">$1</span>')
+            .replace(/([+-]\d+(?:\.\d+)?%)/g, '<span class="percentage">$1</span>');
+    }
+}
+
+const messageHandler = new MessageHandler();
+
+// Enhanced WebSocket connection with better error handling
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    
+    console.log('Connecting to WebSocket:', wsUrl);
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+        console.log('✅ WebSocket connected');
+        addMessage('System', 'Connected to enhanced trading bot AI.', 'notification');
+    };
+
+    ws.onmessage = (event) => {
+        console.log('📨 WebSocket message received:', event.data);
+        
+        try {
+            const data = JSON.parse(event.data);
+            handleWebSocketMessage(data);
+        } catch (e) {
+            console.error('❌ WebSocket message parsing error:', e);
+            // Fallback for plain text messages
+            addMessage('Bot', event.data || 'Received message but could not parse it.');
+        }
+    };
+
+    ws.onclose = (event) => {
+        console.warn('🔌 WebSocket disconnected. Code:', event.code, 'Reason:', event.reason);
+        addMessage('System', 'Disconnected from bot. Reconnecting...', 'notification');
+        setTimeout(connectWebSocket, 3000);
+    };
+
+    ws.onerror = (error) => {
+        console.error('❌ WebSocket error:', error);
+        addMessage('System', 'WebSocket connection error. Using HTTP fallback.', 'error');
+    };
+}
+
+function handleWebSocketMessage(data) {
+    console.log('📊 Processing message:', data);
+    
+    try {
+        switch(data.type) {
+            case 'chat_response':
+                handleChatResponse(data);
+                break;
+            case 'trade_signal':
+                addMessage('AI Signal', data.content || data.message || 'Trade signal received', 'trade_signal');
+                break;
+            case 'ai_analysis':
+                addMessage('AI Analysis', data.analysis || data.message || 'Analysis completed', 'analysis');
+                break;
+            case 'bot_status':
+                handleStatusUpdate(data);
+                break;
+            case 'notification':
+                addMessage('System', data.message || 'Notification received', 'notification');
+                break;
+            case 'error':
+                addMessage('Error', data.message || 'An error occurred', 'error');
+                break;
+            case 'pong':
+                console.log('🏓 WebSocket ping/pong successful');
+                break;
+            default:
+                console.log('🤔 Unknown message type:', data.type);
+                addMessage('System', `Received message: ${data.type}`, 'notification');
+        }
+    } catch (error) {
+        console.error('❌ Error handling WebSocket message:', error);
+        addMessage('Error', 'Failed to process server message', 'error');
+    }
+}
+
+function handleChatResponse(data) {
+    console.log('💬 Processing chat response:', data);
+    
+    try {
+        // Extract response content with fallbacks
+        let responseContent = data.response || data.message || data.content;
+        
+        // Handle undefined or null responses
+        if (!responseContent || responseContent === 'undefined') {
+            console.warn('⚠️ Undefined response received:', data);
+            responseContent = 'Sorry, I encountered an issue. Please try asking again.';
+        }
+        
+        // Get message type
+        const messageType = data.message_type || 'text';
+        
+        // Add message to chat
+        addMessage('Bot', responseContent, messageType);
+        
+        // Handle additional features
+        if (data.proactive_insights && data.proactive_insights.length > 0) {
+            console.log('💡 Proactive insights:', data.proactive_insights);
+            // Could add insight display here
+        }
+        
+        if (data.suggestions && data.suggestions.length > 0) {
+            console.log('💭 Suggestions:', data.suggestions);
+            // Could add suggestion display here
+        }
+        
+    } catch (error) {
+        console.error('❌ Error handling chat response:', error);
+        addMessage('Error', 'Failed to display chat response', 'error');
+    }
+}
+
+function handleStatusUpdate(data) {
+    const statusMessage = `Status: ${data.status || 'Unknown'}`;
+    addMessage('Bot Status', statusMessage, 'notification');
+}
+
+// Enhanced message sending with better error handling
+async function sendMessage() {
+    const message = chatInput.value.trim();
+    if (!message) return;
+
+    console.log('📤 Sending message:', message);
+    
+    addMessage('You', message);
+    chatInput.value = '';
+
+    const startTime = performance.now();
+
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        // Send via WebSocket
+        try {
+            const messageData = { 
+                type: 'chat', 
+                message: message,
+                timestamp: new Date().toISOString(),
+                session_id: getSessionId()
+            };
+            
+            ws.send(JSON.stringify(messageData));
+            console.log('✅ Message sent via WebSocket');
+            
+        } catch (error) {
+            console.error('❌ WebSocket send error:', error);
+            // Fallback to HTTP
+            sendMessageHTTP(message, startTime);
+        }
+    } else {
+        console.log('🌐 WebSocket not available, using HTTP');
+        sendMessageHTTP(message, startTime);
+    }
+}
+
+async function sendMessageHTTP(message, startTime) {
+    try {
+        console.log('📡 Sending via HTTP API');
+        
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                message: message,
+                timestamp: new Date().toISOString(),
+                session_id: getSessionId()
+            })
+        });
+        
+        console.log('📡 HTTP response status:', response.status);
+        
+        if (response.ok) {
+            try {
+                const data = await response.json();
+                console.log('📡 HTTP response data:', data);
+                
+                // Calculate response time
+                const endTime = performance.now();
+                data.response_time = (endTime - startTime) / 1000;
+                
+                // Handle as chat response
+                handleChatResponse(data);
+                
+            } catch (jsonError) {
+                console.error('❌ JSON parse error:', jsonError);
+                const textResponse = await response.text();
+                console.log('📄 Raw response:', textResponse);
+                addMessage('Error', 'Received invalid response from server', 'error');
+            }
+        } else {
+            console.error('❌ HTTP error:', response.status);
+            const errorText = await response.text();
+            console.log('📄 Error response:', errorText);
+            addMessage('Error', `Server error: ${response.status}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ HTTP request error:', error);
+        addMessage('Error', `Connection error: ${error.message}`, 'error');
+    }
+}
+
+// Enhanced message adding with proper error handling
+function addMessage(sender, content, messageType = 'text', metadata = {}) {
+    if (!chatMessagesContainer) {
+        console.error('❌ Chat messages container not found');
+        return;
+    }
+    
+    try {
+        // Ensure content is not undefined
+        if (!content || content === 'undefined') {
+            content = 'Message content unavailable';
+        }
+        
+        const renderMethod = messageHandler.messageTypes[messageType] || messageHandler.renderTextMessage;
+        const messageElement = renderMethod.call(messageHandler, sender, content, metadata);
+        
+        chatMessagesContainer.appendChild(messageElement);
+        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+        
+        // Add animation
+        messageElement.style.opacity = '0';
+        messageElement.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            messageElement.style.transition = 'all 0.3s ease';
+            messageElement.style.opacity = '1';
+            messageElement.style.transform = 'translateY(0)';
+        }, 10);
+        
+        console.log('✅ Message added:', sender, content.substring(0, 50));
+        
+    } catch (error) {
+        console.error('❌ Error adding message:', error);
+        
+        // Fallback simple message
+        const simpleDiv = document.createElement('div');
+        simpleDiv.className = 'message bot-message';
+        simpleDiv.innerHTML = `<strong>${sender}:</strong> ${content}`;
+        chatMessagesContainer.appendChild(simpleDiv);
+    }
+}
+
+// Enhanced input handling
+function handleEnter(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+    }
+}
+
+// Utility functions
+function getSessionId() {
+    let sessionId = localStorage.getItem('chat_session_id');
+    if (!sessionId) {
+        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('chat_session_id', sessionId);
+    }
+    return sessionId;
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Chat interface loading...');
+    
+    connectWebSocket();
+    
+    // Enhanced input event listeners
+    if (chatInput) {
+        chatInput.addEventListener('keydown', handleEnter);
+        chatInput.addEventListener('focus', () => {
+            console.log('💭 Chat input focused');
+        });
+    } else {
+        console.error('❌ Chat input element not found');
+    }
+    
+    console.log('✅ Enhanced Trading Bot Chat Interface Loaded');
+});
+
+// Global error handler
+window.addEventListener('error', (event) => {
+    console.error('🚨 Global JavaScript error:', event.error);
+});
+
+// Export functions for debugging
+window.debugChat = {
+    sendMessage,
+    addMessage,
+    connectWebSocket,
+    getSessionId
+};

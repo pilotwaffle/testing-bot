@@ -1,0 +1,449 @@
+// Enhanced Dashboard JavaScript with WebSocket Support
+class TradingDashboard {
+    constructor() {
+        this.ws = null;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+        this.reconnectInterval = 3000;
+        this.init();
+    }
+
+    init() {
+        console.log('🚀 Trading Dashboard initializing...');
+        this.setupEventListeners();
+        this.connectWebSocket();
+        this.loadInitialData();
+    }
+
+    connectWebSocket() {
+        try {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
+            console.log(`Connecting to WebSocket: ${wsUrl}`);
+            this.ws = new WebSocket(wsUrl);
+            
+            this.ws.onopen = (event) => {
+                console.log('✅ WebSocket connected');
+                this.reconnectAttempts = 0;
+                this.updateConnectionStatus('Connected', 'success');
+            };
+            
+            this.ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    this.handleWebSocketMessage(data);
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+            
+            this.ws.onclose = (event) => {
+                console.log('🔴 WebSocket disconnected');
+                this.updateConnectionStatus('Disconnected', 'error');
+                this.scheduleReconnect();
+            };
+            
+            this.ws.onerror = (event) => {
+                console.error('WebSocket error:', event);
+                this.updateConnectionStatus('Error', 'error');
+            };
+            
+        } catch (error) {
+            console.error('Failed to create WebSocket connection:', error);
+            this.updateConnectionStatus('Failed', 'error');
+            this.scheduleReconnect();
+        }
+    }
+
+    scheduleReconnect() {
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            console.log(`Attempting to reconnect in ${this.reconnectInterval/1000}s... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+            
+            setTimeout(() => {
+                this.connectWebSocket();
+            }, this.reconnectInterval);
+        } else {
+            console.log('Max reconnection attempts reached. Switching to polling mode.');
+            this.startPollingMode();
+        }
+    }
+
+    startPollingMode() {
+        console.log('🔄 Starting polling mode for updates');
+        this.updateConnectionStatus('Polling Mode', 'warning');
+        
+        // Poll for updates every 10 seconds
+        setInterval(() => {
+            this.loadInitialData();
+        }, 10000);
+    }
+
+    handleWebSocketMessage(data) {
+        console.log('📨 WebSocket message received:', data.type);
+        
+        switch (data.type) {
+            case 'real_time_update':
+            case 'initial_data':
+                this.updateMarketData(data.market_data);
+                this.updatePortfolio(data.portfolio);
+                this.updateTradingStatus(data.trading_status);
+                break;
+            
+            case 'trading_status_update':
+                this.showAlert(data.message, data.status === 'started' ? 'success' : 'info');
+                break;
+            
+            case 'ml_training_update':
+                this.showAlert(`ML Training: ${data.model_type} for ${data.symbol} completed`, 'success');
+                break;
+            
+            case 'pong':
+                console.log('🏓 WebSocket ping/pong successful');
+                break;
+            
+            default:
+                console.log('Unknown message type:', data.type);
+        }
+    }
+
+    updateMarketData(marketData) {
+        if (!marketData) return;
+        
+        const marketContainer = document.querySelector('.market-data, #marketData');
+        if (marketContainer) {
+            marketContainer.innerHTML = Object.entries(marketData).map(([symbol, data]) => `
+                <div class="price-card">
+                    <div class="symbol">${symbol}</div>
+                    <div class="price">$${data.price.toFixed(2)}</div>
+                    <div class="change ${data.change_24h >= 0 ? 'positive' : 'negative'}">
+                        ${data.change_24h >= 0 ? '+' : ''}${data.change_24h.toFixed(2)}%
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
+    updatePortfolio(portfolio) {
+        if (!portfolio) return;
+        
+        // Update portfolio value
+        const totalValueEl = document.querySelector('[data-metric="total_value"], .total-value');
+        if (totalValueEl) {
+            totalValueEl.textContent = `$${portfolio.total_value.toFixed(2)}`;
+        }
+        
+        // Update P&L
+        const pnlEl = document.querySelector('[data-metric="pnl_24h"], .pnl-24h');
+        if (pnlEl) {
+            pnlEl.textContent = `$${portfolio.pnl_24h.toFixed(2)}`;
+            pnlEl.className = portfolio.pnl_24h >= 0 ? 'positive' : 'negative';
+        }
+    }
+
+    updateTradingStatus(status) {
+        if (!status) return;
+        
+        const statusEl = document.querySelector('[data-status="bot"], .bot-status');
+        if (statusEl) {
+            statusEl.textContent = status.is_running ? 'Running' : 'Stopped';
+            statusEl.className = status.is_running ? 'running' : 'stopped';
+        }
+    }
+
+    updateConnectionStatus(status, type) {
+        const connectionEl = document.getElementById('connectionStatus');
+        if (connectionEl) {
+            connectionEl.textContent = status;
+            connectionEl.className = `status-value text-${type}`;
+        }
+    }
+
+    setupEventListeners() {
+        // Trading control buttons
+        document.getElementById('startBot')?.addEventListener('click', () => this.startBot());
+        document.getElementById('stopBot')?.addEventListener('click', () => this.stopBot());
+        document.getElementById('refreshData')?.addEventListener('click', () => this.refreshData());
+        
+        // Chat functionality
+        document.getElementById('sendChat')?.addEventListener('click', () => this.sendChatMessage());
+        document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.sendChatMessage();
+        });
+        
+        // ML training buttons (if they exist)
+        document.querySelectorAll('[onclick*="trainModel"]').forEach(button => {
+            const onclick = button.getAttribute('onclick');
+            if (onclick) {
+                const match = onclick.match(/trainModel\('([^']+)',\s*'([^']+)',\s*'([^']+)'/);
+                if (match) {
+                    const [, modelType, symbolSelectId, responseId] = match;
+                    button.onclick = () => this.trainModel(modelType, symbolSelectId, responseId);
+                }
+            }
+        });
+    }
+
+    async loadInitialData() {
+        try {
+            await this.updateStatus();
+            await this.updateMarketDataFromAPI();
+        } catch (error) {
+            console.error('Error loading initial data:', error);
+        }
+    }
+
+    async updateStatus() {
+        try {
+            const response = await fetch('/health');
+            const data = await response.json();
+            
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+            
+        } catch (error) {
+            console.error('Error updating status:', error);
+        }
+    }
+
+    async updateMarketDataFromAPI() {
+        try {
+            const response = await fetch('/api/market-data');
+            const data = await response.json();
+            
+            if (data.status === 'success' && data.data) {
+                this.updateMarketData(data.data);
+            }
+        } catch (error) {
+            console.error('Error updating market data:', error);
+        }
+    }
+
+    // Trading Controls
+    async startBot() {
+        this.showAlert('Starting trading bot...', 'info');
+        try {
+            const response = await fetch('/api/trading/start', { method: 'POST' });
+            const data = await response.json();
+            this.showAlert(data.message, data.status === 'success' ? 'success' : 'error');
+        } catch (error) {
+            this.showAlert('Failed to start trading bot: ' + error.message, 'error');
+        }
+    }
+
+    async stopBot() {
+        this.showAlert('Stopping trading bot...', 'info');
+        try {
+            const response = await fetch('/api/trading/stop', { method: 'POST' });
+            const data = await response.json();
+            this.showAlert(data.message, data.status === 'success' ? 'success' : 'error');
+        } catch (error) {
+            this.showAlert('Failed to stop trading bot: ' + error.message, 'error');
+        }
+    }
+
+    async refreshData() {
+        this.showAlert('Refreshing data...', 'info');
+        await this.loadInitialData();
+        this.showAlert('Data refreshed successfully!', 'success');
+    }
+
+    // ML Training
+    async trainModel(modelType, symbolSelectId, responseId) {
+        try {
+            const symbolSelect = document.getElementById(symbolSelectId);
+            const symbol = symbolSelect ? symbolSelect.value : 'BTC/USDT';
+            
+            this.updateResponse(responseId, `🔄 Training ${modelType} model for ${symbol}...`);
+            
+            const response = await fetch(`/api/ml/train/${modelType}?symbol=${symbol}`, { 
+                method: 'POST' 
+            });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                this.updateResponse(responseId, `✅ ${data.message}\nAccuracy: ${data.accuracy || 'N/A'}`);
+            } else {
+                this.updateResponse(responseId, '❌ ' + data.message);
+            }
+        } catch (error) {
+            this.updateResponse(responseId, '❌ Error: ' + error.message);
+        }
+    }
+
+    // Chat functionality
+    async sendChatMessage() {
+        const input = document.getElementById('chat-input') || document.getElementById('chatInput');
+        const messages = document.getElementById('chat-messages') || document.getElementById('chatMessages');
+        
+        if (!input || !messages || !input.value.trim()) return;
+
+        const message = input.value.trim();
+        input.value = '';
+
+        this.addChatMessage('You', message);
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message })
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                this.addChatMessage('Bot', data.response);
+            } else {
+                this.addChatMessage('Bot', 'Error: ' + data.message);
+            }
+        } catch (error) {
+            this.addChatMessage('Bot', 'Error: ' + error.message);
+        }
+    }
+
+    addChatMessage(sender, message) {
+        const messages = document.getElementById('chat-messages') || document.getElementById('chatMessages');
+        if (!messages) return;
+
+        const messageDiv = document.createElement('div');
+        messageDiv.style.marginBottom = '10px';
+        messageDiv.style.padding = '8px 12px';
+        messageDiv.style.borderRadius = '8px';
+        
+        if (sender === 'You') {
+            messageDiv.style.background = 'rgba(0, 212, 255, 0.2)';
+            messageDiv.style.border = '1px solid rgba(0, 212, 255, 0.3)';
+        } else {
+            messageDiv.style.background = 'rgba(76, 175, 80, 0.2)';
+            messageDiv.style.border = '1px solid rgba(76, 175, 80, 0.3)';
+        }
+
+        messageDiv.innerHTML = `
+            <strong>${sender}:</strong> ${message}
+            <div style="font-size: 0.8em; opacity: 0.7; margin-top: 5px;">
+                ${new Date().toLocaleTimeString()}
+            </div>
+        `;
+
+        messages.appendChild(messageDiv);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    updateResponse(elementId, message) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = message;
+        }
+    }
+
+    showAlert(message, type = 'info') {
+        // Remove existing alerts
+        document.querySelectorAll('.alert').forEach(alert => alert.remove());
+
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.textContent = message;
+        alert.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+
+        // Set background color based on type
+        const colors = {
+            success: '#4CAF50',
+            error: '#f44336',
+            warning: '#ff9800',
+            info: '#2196F3'
+        };
+        alert.style.backgroundColor = colors[type] || colors.info;
+
+        document.body.appendChild(alert);
+
+        // Auto-remove after 5 seconds
+        setTimeout(() => alert.remove(), 5000);
+    }
+
+    // Send periodic ping to keep WebSocket alive
+    startHeartbeat() {
+        setInterval(() => {
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000); // Ping every 30 seconds
+    }
+}
+
+// Global functions for backward compatibility
+window.startTrading = async function() {
+    if (window.dashboard) {
+        await window.dashboard.startBot();
+    }
+};
+
+window.stopTrading = async function() {
+    if (window.dashboard) {
+        await window.dashboard.stopBot();
+    }
+};
+
+window.getStatus = async function() {
+    if (window.dashboard) {
+        await window.dashboard.updateStatus();
+    }
+};
+
+window.getPositions = async function() {
+    if (window.dashboard) {
+        await window.dashboard.refreshData();
+    }
+};
+
+window.getMarketData = async function() {
+    if (window.dashboard) {
+        await window.dashboard.updateMarketDataFromAPI();
+    }
+};
+
+window.testMLSystem = async function() {
+    try {
+        const response = await fetch('/api/ml/test', { method: 'POST' });
+        const data = await response.json();
+        document.getElementById('ml-test-response').textContent = data.message;
+    } catch (error) {
+        document.getElementById('ml-test-response').textContent = '❌ Error: ' + error.message;
+    }
+};
+
+window.trainModel = async function(modelType, symbolSelectId, responseId) {
+    if (window.dashboard) {
+        await window.dashboard.trainModel(modelType, symbolSelectId, responseId);
+    }
+};
+
+window.sendChatMessage = async function() {
+    if (window.dashboard) {
+        await window.dashboard.sendChatMessage();
+    }
+};
+
+window.handleChatEnter = function(event) {
+    if (event.key === 'Enter' && window.dashboard) {
+        window.dashboard.sendChatMessage();
+    }
+};
+
+// Initialize dashboard when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initializing Trading Dashboard...');
+    window.dashboard = new TradingDashboard();
+    window.dashboard.startHeartbeat();
+});

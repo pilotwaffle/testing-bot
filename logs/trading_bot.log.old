@@ -1,20 +1,293 @@
-2025-06-19 01:20:05,294 - crypto-bot - INFO - Main application logger configured.
-2025-06-19 01:20:05,311 - crypto-bot - INFO - Application starting up...
-2025-06-19 01:20:05,436 - crypto-bot - INFO - Trading engine and chatbot initialized.
-2025-06-19 01:20:05,437 - crypto-bot - INFO - Starting trading engine and data feeds now...
-2025-06-19 01:20:09,078 - crypto-bot - INFO - WebSocket client disconnected.
-2025-06-19 01:20:11,184 - crypto-bot - INFO - WebSocket client disconnected.
-2025-06-19 01:24:02,915 - crypto-bot - INFO - Application shutting down...
-2025-06-19 01:24:07,786 - crypto-bot - INFO - Application shutdown complete.
-2025-06-19 01:24:17,018 - crypto-bot - INFO - Main application logger configured.
-2025-06-19 01:24:17,018 - crypto-bot - INFO - Application starting up...
-2025-06-19 01:24:17,069 - crypto-bot - INFO - Trading engine and chatbot initialized.
-2025-06-19 01:24:17,069 - crypto-bot - INFO - Starting trading engine and data feeds now...
-2025-06-19 01:24:31,218 - crypto-bot - INFO - WebSocket client disconnected.
-2025-06-19 01:24:33,298 - crypto-bot - INFO - WebSocket client disconnected.
-2025-06-19 01:29:09,422 - crypto-bot - INFO - Application shutting down...
-2025-06-19 01:29:09,422 - crypto-bot - INFO - Application shutdown complete.
-2025-06-19 01:29:18,360 - crypto-bot - INFO - Main application logger configured.
-2025-06-19 01:29:18,360 - crypto-bot - INFO - Application starting up...
-2025-06-19 01:29:18,408 - crypto-bot - INFO - Trading engine and chatbot initialized.
-2025-06-19 01:29:18,408 - crypto-bot - INFO - Starting trading engine and data feeds now...
+2025-06-27 00:54:48,078 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 00:54:48,265 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 00:54:48,265 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 00:54:48,267 - crypto-bot - WARNING - Enhanced chat routes not available: cannot import name 'router' from partially initialized module 'api.routers.chat_routes' (most likely due to a circular import) (E:\Trade Chat Bot\G Trading Bot\api\routers\chat_routes.py)
+2025-06-27 00:54:48,267 - crypto-bot - WARNING - Enhanced chat routes not available: cannot import name 'router' from partially initialized module 'api.routers.chat_routes' (most likely due to a circular import) (E:\Trade Chat Bot\G Trading Bot\api\routers\chat_routes.py)
+2025-06-27 00:54:48,353 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 00:54:48,353 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 00:57:31,067 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 00:57:31,109 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 00:57:31,114 - crypto-bot - INFO - Enhanced application starting up with advanced AI chat...
+2025-06-27 00:57:31,114 - crypto-bot - INFO - Current working directory: E:\Trade Chat Bot\G Trading Bot
+2025-06-27 00:57:31,114 - crypto-bot - INFO - Config file exists: True
+2025-06-27 00:57:31,116 - crypto-bot - INFO - Configuration loaded successfully!
+2025-06-27 00:57:31,116 - crypto-bot - INFO - Configuration management system initialized
+2025-06-27 00:57:31,117 - crypto-bot - WARNING - Database initialization failed: Expected string or URL object, got {}
+2025-06-27 00:57:31,118 - crypto-bot - INFO - ML engine initialized
+2025-06-27 00:57:31,141 - crypto-bot - INFO - Data fetcher initialized
+2025-06-27 00:57:31,177 - crypto-bot - INFO - Risk management system initialized
+2025-06-27 00:57:43,810 - crypto-bot - ERROR - Enhanced chat manager initialization failed: 'EnhancedChatManager' object has no attribute '_handle_help_command'
+2025-06-27 00:57:43,811 - crypto-bot - INFO - All systems initialized successfully
+2025-06-27 00:57:43,812 - crypto-bot - INFO - Starting enhanced trading engine...
+2025-06-27 13:21:00,397 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 13:21:00,633 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 13:21:00,637 - crypto-bot - INFO - Enhanced application starting up with advanced AI chat...
+2025-06-27 13:21:00,637 - crypto-bot - INFO - Current working directory: E:\Trade Chat Bot\G Trading Bot
+2025-06-27 13:21:00,638 - crypto-bot - INFO - Config file exists: True
+2025-06-27 13:21:00,651 - crypto-bot - INFO - Configuration loaded successfully!
+2025-06-27 13:21:00,651 - crypto-bot - INFO - Configuration management system initialized
+2025-06-27 13:21:00,652 - crypto-bot - WARNING - Database initialization failed: Expected string or URL object, got {}
+2025-06-27 13:21:00,653 - crypto-bot - INFO - ML engine initialized
+2025-06-27 13:21:00,668 - crypto-bot - INFO - Data fetcher initialized
+2025-06-27 13:21:00,695 - crypto-bot - INFO - Risk management system initialized
+2025-06-27 13:21:05,662 - crypto-bot - ERROR - Enhanced chat manager initialization failed: 'EnhancedChatManager' object has no attribute '_handle_help_command'
+2025-06-27 13:21:05,662 - crypto-bot - INFO - All systems initialized successfully
+2025-06-27 13:21:05,662 - crypto-bot - INFO - Starting enhanced trading engine...
+2025-06-27 15:32:33,464 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 15:32:33,492 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 15:32:33,496 - crypto-bot - INFO - Enhanced application starting up with advanced AI chat...
+2025-06-27 15:32:33,497 - crypto-bot - INFO - Current working directory: E:\Trade Chat Bot\G Trading Bot
+2025-06-27 15:32:33,497 - crypto-bot - INFO - Config file exists: True
+2025-06-27 15:32:33,497 - crypto-bot - INFO - Configuration loaded successfully!
+2025-06-27 15:32:33,497 - crypto-bot - INFO - Configuration management system initialized
+2025-06-27 15:32:33,498 - crypto-bot - WARNING - Database initialization failed: Expected string or URL object, got {}
+2025-06-27 15:32:33,498 - crypto-bot - INFO - ML engine initialized
+2025-06-27 15:32:33,506 - crypto-bot - INFO - Data fetcher initialized
+2025-06-27 15:32:33,512 - crypto-bot - INFO - Risk management system initialized
+2025-06-27 15:32:34,052 - crypto-bot - ERROR - Enhanced chat manager initialization failed: 'EnhancedChatManager' object has no attribute '_handle_help_command'
+2025-06-27 15:32:34,053 - crypto-bot - INFO - All systems initialized successfully
+2025-06-27 15:32:34,053 - crypto-bot - INFO - Starting enhanced trading engine...
+2025-06-27 15:47:07,976 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 15:47:07,983 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 15:47:07,983 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 15:47:07,984 - crypto-bot - WARNING - Enhanced chat routes not available: cannot import name 'router' from partially initialized module 'api.routers.chat_routes' (most likely due to a circular import) (E:\Trade Chat Bot\G Trading Bot\api\routers\chat_routes.py)
+2025-06-27 15:47:07,984 - crypto-bot - WARNING - Enhanced chat routes not available: cannot import name 'router' from partially initialized module 'api.routers.chat_routes' (most likely due to a circular import) (E:\Trade Chat Bot\G Trading Bot\api\routers\chat_routes.py)
+2025-06-27 15:47:08,014 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 15:47:08,014 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 15:47:11,250 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 15:47:11,281 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 15:47:11,292 - crypto-bot - INFO - Enhanced application starting up with advanced AI chat...
+2025-06-27 15:47:11,292 - crypto-bot - INFO - Current working directory: E:\Trade Chat Bot\G Trading Bot
+2025-06-27 15:47:11,292 - crypto-bot - INFO - Config file exists: True
+2025-06-27 15:47:11,293 - crypto-bot - INFO - Configuration loaded successfully!
+2025-06-27 15:47:11,293 - crypto-bot - INFO - Configuration management system initialized
+2025-06-27 15:47:11,293 - crypto-bot - WARNING - Database initialization failed: Expected string or URL object, got {}
+2025-06-27 15:47:11,293 - crypto-bot - INFO - ML engine initialized
+2025-06-27 15:47:11,301 - crypto-bot - INFO - Data fetcher initialized
+2025-06-27 15:47:11,308 - crypto-bot - INFO - Risk management system initialized
+2025-06-27 15:47:11,671 - crypto-bot - ERROR - Enhanced chat manager initialization failed: 'EnhancedChatManager' object has no attribute '_handle_help_command'
+2025-06-27 15:47:11,671 - crypto-bot - INFO - All systems initialized successfully
+2025-06-27 15:47:11,672 - crypto-bot - INFO - Starting enhanced trading engine...
+2025-06-27 15:49:00,835 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 15:49:00,852 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 15:49:00,863 - crypto-bot - INFO - Enhanced application starting up with advanced AI chat...
+2025-06-27 15:49:00,863 - crypto-bot - INFO - Current working directory: E:\Trade Chat Bot\G Trading Bot
+2025-06-27 15:49:00,864 - crypto-bot - INFO - Config file exists: True
+2025-06-27 15:49:00,866 - crypto-bot - INFO - Configuration loaded successfully!
+2025-06-27 15:49:00,866 - crypto-bot - INFO - Configuration management system initialized
+2025-06-27 15:49:00,867 - crypto-bot - WARNING - Database initialization failed: Expected string or URL object, got {}
+2025-06-27 15:49:00,868 - crypto-bot - INFO - ML engine initialized
+2025-06-27 15:49:00,884 - crypto-bot - INFO - Data fetcher initialized
+2025-06-27 15:49:00,896 - crypto-bot - INFO - Risk management system initialized
+2025-06-27 15:49:01,255 - crypto-bot - ERROR - Enhanced chat manager initialization failed: 'EnhancedChatManager' object has no attribute '_handle_help_command'
+2025-06-27 15:49:06,257 - crypto-bot - INFO - All systems initialized successfully
+2025-06-27 15:49:06,257 - crypto-bot - INFO - Starting enhanced trading engine...
+2025-06-27 16:41:17,119 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 16:41:17,145 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 16:41:17,152 - crypto-bot - INFO - Enhanced application starting up with advanced AI chat...
+2025-06-27 16:41:17,153 - crypto-bot - INFO - Current working directory: E:\Trade Chat Bot\G Trading Bot
+2025-06-27 16:41:17,153 - crypto-bot - INFO - Config file exists: True
+2025-06-27 16:41:17,154 - crypto-bot - ERROR - Config loading failed: NotificationConfig.__init__() got an unexpected keyword argument 'discord_webhook'
+2025-06-27 16:41:17,155 - crypto-bot - INFO - Using fallback default configuration
+2025-06-27 16:41:17,155 - crypto-bot - INFO - Configuration management system initialized
+2025-06-27 16:41:17,156 - crypto-bot - WARNING - Database initialization failed: Expected string or URL object, got {}
+2025-06-27 16:41:17,156 - crypto-bot - INFO - ML engine initialized
+2025-06-27 16:41:17,164 - crypto-bot - INFO - Data fetcher initialized
+2025-06-27 16:41:17,170 - crypto-bot - INFO - Risk management system initialized
+2025-06-27 16:41:17,557 - crypto-bot - ERROR - Enhanced chat manager initialization failed: 'EnhancedChatManager' object has no attribute '_handle_help_command'
+2025-06-27 16:41:17,558 - crypto-bot - INFO - All systems initialized successfully
+2025-06-27 16:41:17,558 - crypto-bot - INFO - Starting enhanced trading engine...
+2025-06-27 16:57:00,407 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 16:57:00,454 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 16:57:00,466 - crypto-bot - INFO - Enhanced application starting up with advanced AI chat...
+2025-06-27 16:57:00,467 - crypto-bot - INFO - Current working directory: E:\Trade Chat Bot\G Trading Bot
+2025-06-27 16:57:00,468 - crypto-bot - INFO - Config file exists: True
+2025-06-27 16:57:00,470 - crypto-bot - ERROR - Config loading failed: NotificationConfig.__init__() got an unexpected keyword argument 'discord_webhook'
+2025-06-27 16:57:00,471 - crypto-bot - INFO - Using fallback default configuration
+2025-06-27 16:57:00,472 - crypto-bot - INFO - Configuration management system initialized
+2025-06-27 16:57:00,473 - crypto-bot - WARNING - Database initialization failed: Expected string or URL object, got {}
+2025-06-27 16:57:00,475 - crypto-bot - INFO - ML engine initialized
+2025-06-27 16:57:00,504 - crypto-bot - INFO - Data fetcher initialized
+2025-06-27 16:57:00,519 - crypto-bot - INFO - Risk management system initialized
+2025-06-27 16:57:00,876 - crypto-bot - ERROR - Enhanced chat manager initialization failed: 'EnhancedChatManager' object has no attribute '_handle_help_command'
+2025-06-27 16:57:00,877 - crypto-bot - INFO - All systems initialized successfully
+2025-06-27 16:57:00,878 - crypto-bot - INFO - Starting enhanced trading engine...
+2025-06-27 17:36:50,742 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 17:36:50,790 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 17:36:50,801 - crypto-bot - INFO - Enhanced application starting up with advanced AI chat...
+2025-06-27 17:36:50,801 - crypto-bot - INFO - Current working directory: E:\Trade Chat Bot\G Trading Bot
+2025-06-27 17:36:50,802 - crypto-bot - INFO - Config file exists: True
+2025-06-27 17:36:50,803 - crypto-bot - ERROR - Config loading failed: NotificationConfig.__init__() got an unexpected keyword argument 'discord_webhook'
+2025-06-27 17:36:50,804 - crypto-bot - INFO - Using fallback default configuration
+2025-06-27 17:36:50,804 - crypto-bot - INFO - Configuration management system initialized
+2025-06-27 17:36:50,804 - crypto-bot - INFO - ML engine initialized
+2025-06-27 17:36:50,828 - crypto-bot - INFO - Data fetcher initialized
+2025-06-27 17:36:50,840 - crypto-bot - INFO - Risk management system initialized
+2025-06-27 17:36:51,545 - crypto-bot - ERROR - Enhanced chat manager initialization failed: 'EnhancedChatManager' object has no attribute '_handle_help_command'
+2025-06-27 17:36:51,546 - crypto-bot - INFO - All systems initialized successfully
+2025-06-27 17:36:51,547 - crypto-bot - INFO - Starting enhanced trading engine...
+2025-06-27 17:51:06,916 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 17:51:06,963 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 17:51:06,973 - crypto-bot - INFO - Enhanced application starting up with advanced AI chat...
+2025-06-27 17:51:06,973 - crypto-bot - INFO - Current working directory: E:\Trade Chat Bot\G Trading Bot
+2025-06-27 17:51:06,973 - crypto-bot - INFO - Config file exists: True
+2025-06-27 17:51:06,975 - crypto-bot - ERROR - Config loading failed: NotificationConfig.__init__() got an unexpected keyword argument 'discord_webhook'
+2025-06-27 17:51:06,976 - crypto-bot - INFO - Using fallback default configuration
+2025-06-27 17:51:06,977 - crypto-bot - INFO - Configuration management system initialized
+2025-06-27 17:51:06,977 - crypto-bot - INFO - ML engine initialized
+2025-06-27 17:51:06,995 - crypto-bot - INFO - Data fetcher initialized
+2025-06-27 17:51:07,009 - crypto-bot - INFO - Risk management system initialized
+2025-06-27 17:51:07,720 - crypto-bot - ERROR - Enhanced chat manager initialization failed: 'EnhancedChatManager' object has no attribute '_handle_help_command'
+2025-06-27 17:51:07,721 - crypto-bot - INFO - All systems initialized successfully
+2025-06-27 17:51:07,721 - crypto-bot - INFO - Starting enhanced trading engine...
+2025-06-27 18:07:43,210 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 18:07:43,222 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 18:07:43,222 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 18:07:43,224 - crypto-bot - WARNING - Enhanced chat routes not available: cannot import name 'router' from partially initialized module 'api.routers.chat_routes' (most likely due to a circular import) (E:\Trade Chat Bot\G Trading Bot\api\routers\chat_routes.py)
+2025-06-27 18:07:43,224 - crypto-bot - WARNING - Enhanced chat routes not available: cannot import name 'router' from partially initialized module 'api.routers.chat_routes' (most likely due to a circular import) (E:\Trade Chat Bot\G Trading Bot\api\routers\chat_routes.py)
+2025-06-27 18:07:43,248 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 18:07:43,248 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 18:08:43,164 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 18:08:43,170 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 18:08:43,170 - crypto-bot - INFO - Enhanced main application logger configured with AI chat support.
+2025-06-27 18:08:43,171 - crypto-bot - WARNING - Enhanced chat routes not available: cannot import name 'router' from partially initialized module 'api.routers.chat_routes' (most likely due to a circular import) (E:\Trade Chat Bot\G Trading Bot\api\routers\chat_routes.py)
+2025-06-27 18:08:43,171 - crypto-bot - WARNING - Enhanced chat routes not available: cannot import name 'router' from partially initialized module 'api.routers.chat_routes' (most likely due to a circular import) (E:\Trade Chat Bot\G Trading Bot\api\routers\chat_routes.py)
+2025-06-27 18:08:43,194 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-27 18:08:43,194 - crypto-bot - INFO - Enhanced chat routes loaded successfully
+2025-06-28 14:11:06,748 - main - INFO - Starting Industrial Crypto Trading Bot v3.0
+2025-06-28 14:11:06,748 - main - INFO - Initializing Enhanced Trading Engine...
+2025-06-28 14:11:07,048 - main - WARNING - Enhanced Trading Engine failed, using fallback: cannot import name 'EnhancedTradingEngine' from 'core.enhanced_trading_engine' (E:\Trade Chat Bot\G Trading Bot\core\enhanced_trading_engine.py)
+2025-06-28 14:11:07,049 - core.fast_trading_engine - INFO - Fast Trading Engine core initialized
+2025-06-28 14:11:07,050 - main - INFO - Fast Trading Engine initialized (fallback)
+2025-06-28 14:11:07,050 - main - INFO - Initializing ML Engine...
+2025-06-28 14:11:07,652 - core.enhanced_ml_engine - INFO - Enhanced ML Engine initialized
+2025-06-28 14:11:07,652 - core.enhanced_ml_engine - INFO - TensorFlow: True, Keras: False, Sklearn: True
+2025-06-28 14:11:07,653 - main - INFO - Enhanced ML Engine initialized
+2025-06-28 14:11:07,653 - main - INFO - Initializing Notification Manager...
+2025-06-28 14:11:07,653 - core.notification_manager - INFO - Simple Notification Manager initialized (notifications disabled)
+2025-06-28 14:11:07,654 - main - INFO - Notification Manager initialized
+2025-06-28 14:11:07,654 - main - WARNING - Failed to start trading engine: 'FastTradingEngine' object has no attribute 'start'
+2025-06-28 14:11:07,654 - main - INFO - All components initialized - Dashboard ready!
+2025-06-28 14:11:41,156 - main - INFO - Shutting down trading bot...
+2025-06-28 14:11:41,156 - main - ERROR - Cleanup error: 'FastTradingEngine' object has no attribute 'stop'
+2025-06-28 14:11:48,873 - main - INFO - Starting Industrial Crypto Trading Bot v3.0
+2025-06-28 14:11:48,873 - main - INFO - Initializing Enhanced Trading Engine...
+2025-06-28 14:11:49,170 - main - WARNING - Enhanced Trading Engine failed, using fallback: cannot import name 'EnhancedTradingEngine' from 'core.enhanced_trading_engine' (E:\Trade Chat Bot\G Trading Bot\core\enhanced_trading_engine.py)
+2025-06-28 14:11:49,172 - core.fast_trading_engine - INFO - Fast Trading Engine core initialized
+2025-06-28 14:11:49,172 - main - INFO - Fast Trading Engine initialized (fallback)
+2025-06-28 14:11:49,172 - main - INFO - Initializing ML Engine...
+2025-06-28 14:11:49,778 - core.enhanced_ml_engine - INFO - Enhanced ML Engine initialized
+2025-06-28 14:11:49,778 - core.enhanced_ml_engine - INFO - TensorFlow: True, Keras: False, Sklearn: True
+2025-06-28 14:11:49,778 - main - INFO - Enhanced ML Engine initialized
+2025-06-28 14:11:49,779 - main - INFO - Initializing Notification Manager...
+2025-06-28 14:11:49,779 - core.notification_manager - INFO - Simple Notification Manager initialized (notifications disabled)
+2025-06-28 14:11:49,780 - main - INFO - Notification Manager initialized
+2025-06-28 14:11:49,780 - main - WARNING - Failed to start trading engine: 'FastTradingEngine' object has no attribute 'start'
+2025-06-28 14:11:49,780 - main - INFO - All components initialized - Dashboard ready!
+2025-06-28 14:29:02,005 - main - INFO - Shutting down trading bot...
+2025-06-28 14:29:02,006 - main - ERROR - Cleanup error: 'FastTradingEngine' object has no attribute 'stop'
+2025-06-28 14:29:08,772 - main - INFO - Starting Industrial Crypto Trading Bot v3.0
+2025-06-28 14:29:08,772 - main - INFO - Initializing Enhanced Trading Engine...
+2025-06-28 14:29:09,239 - EliteTradingEngine - INFO - Initializing Elite Trading Engine
+2025-06-28 14:29:09,240 - EliteTradingEngine - INFO - Elite Trading Engine initialization complete
+2025-06-28 14:29:09,241 - main - INFO - Enhanced Trading Engine initialized
+2025-06-28 14:29:09,241 - main - INFO - Initializing ML Engine...
+2025-06-28 14:29:10,155 - core.enhanced_ml_engine - INFO - Enhanced ML Engine initialized
+2025-06-28 14:29:10,155 - core.enhanced_ml_engine - INFO - TensorFlow: True, Keras: False, Sklearn: True
+2025-06-28 14:29:10,155 - main - INFO - Enhanced ML Engine initialized
+2025-06-28 14:29:10,156 - main - INFO - Initializing Notification Manager...
+2025-06-28 14:29:10,157 - core.notification_manager - INFO - Simple Notification Manager initialized (notifications disabled)
+2025-06-28 14:29:10,157 - main - INFO - Notification Manager initialized
+2025-06-28 14:29:10,158 - EliteTradingEngine - INFO - ================================================================================
+2025-06-28 14:29:10,158 - EliteTradingEngine - INFO - STARTING ELITE TRADING ENGINE
+2025-06-28 14:29:10,159 - EliteTradingEngine - INFO - ================================================================================
+2025-06-28 14:29:10,159 - EliteTradingEngine - INFO - Initializing all trading engine components...
+2025-06-28 14:29:10,478 - EliteTradingEngine - INFO - Component initialization: 8/8 (100.0%) successful
+2025-06-28 14:29:10,478 - EliteTradingEngine - INFO - Performing comprehensive system health check...
+2025-06-28 14:29:10,478 - EliteTradingEngine - WARNING - Data availability check failed for BTC/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 14:29:10,478 - EliteTradingEngine - WARNING - Data availability check failed for ETH/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 14:29:10,520 - EliteTradingEngine - INFO - Overall system health: 80.0%
+2025-06-28 14:29:10,520 - EliteTradingEngine - INFO - Starting background tasks...
+2025-06-28 14:29:10,520 - EliteTradingEngine - INFO - Started 7 background tasks
+2025-06-28 14:29:10,521 - EliteTradingEngine - INFO - Elite Trading Engine started successfully
+2025-06-28 14:29:10,521 - EliteTradingEngine - INFO - Starting main trading loop...
+2025-06-28 14:29:10,521 - EliteTradingEngine - INFO - Performing comprehensive system health check...
+2025-06-28 14:29:10,521 - EliteTradingEngine - WARNING - Data availability check failed for BTC/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 14:29:10,521 - EliteTradingEngine - WARNING - Data availability check failed for ETH/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 14:29:10,552 - EliteTradingEngine - INFO - Overall system health: 80.0%
+2025-06-28 14:31:40,525 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 14:43:22,677 - main - INFO - Starting Industrial Crypto Trading Bot v3.0
+2025-06-28 14:43:22,678 - main - INFO - Initializing Enhanced Trading Engine...
+2025-06-28 14:43:23,013 - EliteTradingEngine - INFO - Initializing Elite Trading Engine
+2025-06-28 14:43:23,014 - EliteTradingEngine - INFO - Elite Trading Engine initialization complete
+2025-06-28 14:43:23,014 - main - INFO - Enhanced Trading Engine initialized
+2025-06-28 14:43:23,015 - main - INFO - Initializing ML Engine...
+2025-06-28 14:43:23,670 - core.enhanced_ml_engine - INFO - Enhanced ML Engine initialized
+2025-06-28 14:43:23,670 - core.enhanced_ml_engine - INFO - TensorFlow: True, Keras: False, Sklearn: True
+2025-06-28 14:43:23,671 - main - INFO - Enhanced ML Engine initialized
+2025-06-28 14:43:23,671 - main - INFO - Initializing Notification Manager...
+2025-06-28 14:43:23,672 - core.notification_manager - INFO - Simple Notification Manager initialized (notifications disabled)
+2025-06-28 14:43:23,672 - main - INFO - Notification Manager initialized
+2025-06-28 14:43:23,672 - EliteTradingEngine - INFO - ================================================================================
+2025-06-28 14:43:23,673 - EliteTradingEngine - INFO - STARTING ELITE TRADING ENGINE
+2025-06-28 14:43:23,674 - EliteTradingEngine - INFO - ================================================================================
+2025-06-28 14:43:23,674 - EliteTradingEngine - INFO - Initializing all trading engine components...
+2025-06-28 14:43:23,719 - EliteTradingEngine - INFO - Component initialization: 8/8 (100.0%) successful
+2025-06-28 14:43:23,719 - EliteTradingEngine - INFO - Performing comprehensive system health check...
+2025-06-28 14:43:23,720 - EliteTradingEngine - WARNING - Data availability check failed for BTC/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 14:43:23,720 - EliteTradingEngine - WARNING - Data availability check failed for ETH/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 14:43:23,752 - EliteTradingEngine - INFO - Overall system health: 80.0%
+2025-06-28 14:43:23,753 - EliteTradingEngine - INFO - Starting background tasks...
+2025-06-28 14:43:23,753 - EliteTradingEngine - INFO - Started 7 background tasks
+2025-06-28 14:43:23,753 - EliteTradingEngine - INFO - Elite Trading Engine started successfully
+2025-06-28 14:43:23,753 - EliteTradingEngine - INFO - Starting main trading loop...
+2025-06-28 14:43:23,753 - EliteTradingEngine - INFO - Performing comprehensive system health check...
+2025-06-28 14:43:23,754 - EliteTradingEngine - WARNING - Data availability check failed for BTC/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 14:43:23,754 - EliteTradingEngine - WARNING - Data availability check failed for ETH/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 14:43:23,777 - EliteTradingEngine - INFO - Overall system health: 80.0%
+2025-06-28 14:48:23,742 - EliteTradingEngine - INFO - Performing comprehensive system health check...
+2025-06-28 14:48:23,744 - EliteTradingEngine - WARNING - Data availability check failed for BTC/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 14:48:23,745 - EliteTradingEngine - WARNING - Data availability check failed for ETH/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 14:48:23,778 - EliteTradingEngine - INFO - Overall system health: 80.0%
+2025-06-28 14:53:23,748 - EliteTradingEngine - INFO - Performing comprehensive system health check...
+2025-06-28 14:53:23,749 - EliteTradingEngine - WARNING - Data availability check failed for BTC/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 14:53:23,750 - EliteTradingEngine - WARNING - Data availability check failed for ETH/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 14:53:23,806 - EliteTradingEngine - INFO - Overall system health: 80.0%
+2025-06-28 14:58:23,754 - EliteTradingEngine - INFO - Performing comprehensive system health check...
+2025-06-28 14:58:23,755 - EliteTradingEngine - WARNING - Data availability check failed for BTC/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 14:58:23,755 - EliteTradingEngine - WARNING - Data availability check failed for ETH/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 14:58:23,784 - EliteTradingEngine - INFO - Overall system health: 80.0%
+2025-06-28 15:03:23,772 - EliteTradingEngine - INFO - Performing comprehensive system health check...
+2025-06-28 15:03:23,774 - EliteTradingEngine - WARNING - Data availability check failed for BTC/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 15:03:23,775 - EliteTradingEngine - WARNING - Data availability check failed for ETH/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 15:03:23,822 - EliteTradingEngine - INFO - Overall system health: 80.0%
+2025-06-28 15:08:23,775 - EliteTradingEngine - INFO - Performing comprehensive system health check...
+2025-06-28 15:08:23,777 - EliteTradingEngine - WARNING - Data availability check failed for BTC/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 15:08:23,778 - EliteTradingEngine - WARNING - Data availability check failed for ETH/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 15:08:23,845 - EliteTradingEngine - INFO - Overall system health: 80.0%
+2025-06-28 15:13:23,789 - EliteTradingEngine - INFO - Performing comprehensive system health check...
+2025-06-28 15:13:23,790 - EliteTradingEngine - WARNING - Data availability check failed for BTC/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 15:13:23,791 - EliteTradingEngine - WARNING - Data availability check failed for ETH/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 15:13:23,839 - EliteTradingEngine - INFO - Overall system health: 80.0%
+2025-06-28 15:18:23,785 - EliteTradingEngine - INFO - Performing comprehensive system health check...
+2025-06-28 15:18:23,787 - EliteTradingEngine - WARNING - Data availability check failed for BTC/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 15:18:23,788 - EliteTradingEngine - WARNING - Data availability check failed for ETH/USD: 'MarketDataProcessor' object has no attribute 'get_latest_data'
+2025-06-28 15:18:23,915 - EliteTradingEngine - INFO - Overall system health: 80.0%
+2025-06-28 15:23:23,793 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 15:28:23,833 - main - INFO - Trading engine started
+2025-06-28 15:28:23,834 - main - INFO - All components initialized - Dashboard ready!
+2025-06-28 15:57:59,177 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 15:58:38,680 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 15:58:38,898 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 15:58:39,114 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 15:58:39,331 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 15:58:39,439 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 15:58:39,659 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 15:58:39,877 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 15:58:40,094 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 15:58:40,203 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 15:58:40,421 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 15:58:40,639 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 15:58:40,858 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 15:58:40,968 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...
+2025-06-28 15:58:41,187 - EliteTradingEngine - INFO - Received signal 2, initiating graceful shutdown...

@@ -1,0 +1,147 @@
+{
+  "file_structure": {
+    "Core Files": {
+      "main.py": {
+        "exists": true,
+        "size": 19396
+      },
+      "core/ml_engine.py": {
+        "exists": true,
+        "size": 1590
+      },
+      "core/enhanced_trading_engine.py": {
+        "exists": true,
+        "size": 54991
+      }
+    },
+    "Enhanced Chat Files": {
+      "ai/chat_manager.py": {
+        "exists": true,
+        "size": 28544
+      },
+      "ai/gemini_ai.py": {
+        "exists": true,
+        "size": 4085
+      }
+    },
+    "Template Files": {
+      "templates/dashboard.html": {
+        "exists": true,
+        "size": 8513
+      },
+      "templates/chat.html": {
+        "exists": true,
+        "size": 1256
+      }
+    },
+    "Static Files": {
+      "static/js/chat.js": {
+        "exists": true,
+        "size": 26809
+      },
+      "static/js/dashboard.js": {
+        "exists": true,
+        "size": 16039
+      },
+      "static/css/style.css": {
+        "exists": true,
+        "size": 606
+      }
+    },
+    "Config Files": {
+      ".env": {
+        "exists": true,
+        "size": 1862
+      }
+    }
+  },
+  "imports": {
+    "FastAPI": {
+      "success": true,
+      "error": null
+    },
+    "Templates": {
+      "success": true,
+      "error": null
+    },
+    "Enhanced Trading Engine": {
+      "success": true,
+      "error": null
+    },
+    "ML Engine": {
+      "success": true,
+      "error": null
+    },
+    "Enhanced Chat Manager": {
+      "success": true,
+      "error": null
+    },
+    "Gemini AI": {
+      "success": true,
+      "error": null
+    },
+    "Google Generative AI": {
+      "success": true,
+      "error": null
+    },
+    "Python DotEnv": {
+      "success": true,
+      "error": null
+    }
+  },
+  "ml_engine": {
+    "success": false,
+    "error": "'MLEngine' object has no attribute 'get_status'",
+    "status": null
+  },
+  "gemini_ai": {
+    "success": true,
+    "available": true,
+    "response": "Hello! \ud83d\udc4b  Thanks for testing the bot.  I'm ready to assist you with your cryptocurrency trading needs.  Let me know how I can help! \ud83d\ude80"
+  },
+  "chat_manager": {
+    "success": false,
+    "error": "'EnhancedChatManager' object has no attribute '_handle_help_command'"
+  },
+  "server_endpoints": {
+    "Health Check": {
+      "success": true,
+      "status_code": 200,
+      "content_type": "application/json",
+      "content_length": 177,
+      "content_preview": "{\"status\":\"healthy\",\"components\":{\"trading_engine\":true,\"ml_engine\":true,\"notification_manager\":true,\"kraken_integration\":false,\"websocket_manager\":true},\"timestamp\":816859.421}"
+    },
+    "Main Dashboard": {
+      "success": true,
+      "status_code": 200,
+      "content_type": "application/json",
+      "content_length": 356,
+      "content_preview": "{\"message\":\"Industrial Crypto Trading Bot v3.0 - Full API\",\"status\":\"running\",\"version\":\"3.0.0\",\"features\":[\"Enhanced Trading Engine\",\"ML Predictions\",\"Kraken Futures Paper Trading\",\"WebSocket Support"
+    },
+    "Chat Page": {
+      "success": true,
+      "status_code": 404,
+      "content_type": "application/json",
+      "content_length": 22,
+      "content_preview": "{\"detail\":\"Not Found\"}"
+    },
+    "API Info": {
+      "success": true,
+      "status_code": 404,
+      "content_type": "application/json",
+      "content_length": 22,
+      "content_preview": "{\"detail\":\"Not Found\"}"
+    }
+  },
+  "chat_endpoint": {
+    "success": true,
+    "response": {
+      "status": "success",
+      "response": "Unknown command: Hello! This is a test message for the trading bot.. Type 'help' for available commands."
+    }
+  },
+  "dashboard_template": {
+    "success": true,
+    "html_length": 356
+  }
+}

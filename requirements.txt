@@ -1,66 +1,204 @@
-# Core FastAPI dependencies
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
-jinja2>=3.1.0
-python-multipart>=0.0.6
-websockets>=9.0,<11 # Used by asyncio/FastAPI internally for WebSocket
+# File: E:\Trade Chat Bot\G Trading Bot\requirements.txt
+# Location: E:\Trade Chat Bot\G Trading Bot\requirements.txt
 
-# Environment and configuration
+# 🚀 Elite Trading Bot V3.0 - Python Dependencies
+# Updated with Comprehensive Error Handling System Dependencies
+
+# Core FastAPI Framework
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
+
+# WebSocket Support
+websockets>=12.0
+
+# File Upload Support
+python-multipart>=0.0.6
+
+# Template Engine
+jinja2>=3.1.2
+
+# Async File Operations
+aiofiles>=23.2.1
+
+# Environment Variables
 python-dotenv>=1.0.0
 
-# Cryptocurrency exchange integration
-ccxt>=4.2.0
+# HTTP Requests
+aiohttp>=3.9.1
+requests>=2.31.0
 
-# Modern Alpaca SDK (for stock trading)
-alpaca-py>=0.24.0
+# System Monitoring
+psutil>=5.9.6
 
-# Data processing and analysis
-pandas>=2.0.0
+# Data Processing
 numpy>=1.24.0
-scipy>=1.11.0 # scipy is a dependency for some sklearn versions or numpy functions
+pandas>=2.1.0
 
-# Machine Learning
-scikit-learn>=1.3.0
-xgboost>=1.7.0 # XGBoost for gradient boosting models
-tensorflow>=2.10.0 # Your primary deep learning framework
+# Google Gemini AI
+google-generativeai>=0.3.0
 
-# New/Updated: Notification Channels, Chat AI
-httpx>=0.23.0 # For async HTTP requests (used by Slack/Discord notifications)
-twilio>=7.0.0 # For SMS notifications
-google-generativeai==0.3.0 # For Google AI / Gemini integration
-# Note: google-generativeai version 0.3.0 is known to work well with current setups,
-# Newer versions might exist but can introduce breaking changes. Pinning is safer.
+# Date/Time Handling
+python-dateutil>=2.8.2
 
-# WebSocket client for general usage (not the ASGI server websockets)
-websocket-client>=1.6.0 # For client-side WebSocket connections if you make them
+# JSON Processing
+orjson>=3.9.0
 
-# Web scraping and HTTP requests (requests is sync, aiohttp is async - httpx is generally preferred for new async code)
-# Keeping aiohttp if you have other parts of your code using it for async operations
-requests>=2.31.0 # Standard synchronous HTTP requests
-beautifulsoup4>=4.12.0 # For web scraping
-aiohttp>=3.9.0 # For async HTTP requests (consider if you use it extensively, otherwise httpx is the main async http client here)
+# Logging
+structlog>=23.2.0
 
-# Visualization and charting (keeping these as they are useful for analysis/dashboard)
-matplotlib>=3.7.0
-plotly>=5.15.0
-seaborn>=0.12.0
+# 🛡️ NEW: Error Handling System Dependencies
+# Configuration Management
+pyyaml>=6.0.1
 
-# NOTE: sqlite3 is built into Python, no need to install
+# Enhanced Error Tracking and Metrics
+prometheus-client>=0.19.0
 
-# Utilities and helpers
-python-dateutil>=2.8.0 # For robust date/time parsing
-pytz>=2023.3 # For timezone handling
-schedule>=1.2.0 # For simple task scheduling (if used)
+# Circuit Breaker Implementation
+pybreaker>=1.0.1
 
-# Additional crypto data sources
-yfinance>=0.2.0 # For Yahoo Finance data (if used)
+# Advanced Retry Logic
+tenacity>=8.2.3
 
-# Development and testing (optional)
+# Alert Management Dependencies
+# Email Alerts
+aiosmtplib>=3.0.1
+
+# Slack/Discord Webhooks (enhanced HTTP client)
+httpx>=0.25.2
+
+# 🔧 Optional: Advanced Features
+# Database Support (if you want persistent error logging)
+sqlalchemy>=2.0.23
+alembic>=1.13.1
+asyncpg>=0.29.0  # PostgreSQL async driver
+aiosqlite>=0.19.0  # SQLite async driver
+
+# Redis Support (for distributed caching/rate limiting)
+redis>=5.0.1
+aioredis>=2.0.1
+
+# Enhanced Security
+cryptography>=41.0.7
+
+# Rate Limiting
+slowapi>=0.1.9
+
+# JSON Schema Validation
+pydantic>=2.5.0
+
+# Development Dependencies (Optional)
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
-black>=23.0.0 # Code formatter
-flake8>=6.0.0 # Linter
+black>=23.0.0
+flake8>=6.0.0
 
-# Optional: Advanced ML libraries (uncomment and install as needed)
-# torch>=2.0.0 # PyTorch for deep learning
-# transformers>=4.30.0 # For NLP-based sentiment analysis
+# Testing HTTP APIs
+httpx>=0.25.2  # Also used for webhooks above
+
+# Mock Testing
+pytest-mock>=3.12.0
+
+# Coverage Reports
+pytest-cov>=4.1.0
+
+# 📊 Monitoring and Observability (Optional Advanced Features)
+# APM and Performance Monitoring
+opentelemetry-api>=1.21.0
+opentelemetry-sdk>=1.21.0
+opentelemetry-instrumentation-fastapi>=0.42b0
+
+# Structured Logging Enhancement
+python-json-logger>=2.0.7
+
+# Health Check Endpoints
+fastapi-health>=0.4.0
+
+# 🚀 Production Deployment (Optional)
+# ASGI Server Alternatives
+gunicorn>=21.2.0
+hypercorn>=0.16.0
+
+# Process Management
+supervisor>=4.2.5
+
+# Configuration Validation
+dynaconf>=3.2.4
+
+# Environment-specific Config
+environs>=10.3.0
+
+# 🔒 Security Enhancements (Optional)
+# JWT Token Handling
+pyjwt>=2.8.0
+
+# Password Hashing
+passlib[bcrypt]>=1.7.4
+
+# CORS and Security Headers
+fastapi-cors>=0.0.6
+
+# Rate Limiting and DDoS Protection
+limits>=3.7.0
+
+# API Key Management
+python-jose[cryptography]>=3.3.0
+
+# 📈 Performance Optimization (Optional)
+# Async Task Queue
+celery>=5.3.4
+redis>=5.0.1  # Celery broker (already listed above)
+
+# Memory Profiling
+memory-profiler>=0.61.0
+
+# CPU Profiling
+py-spy>=0.3.14
+
+# Connection Pooling
+aiopg>=1.4.0  # PostgreSQL connection pooling
+
+# 🧪 Additional Testing Tools (Optional)
+# Load Testing
+locust>=2.17.0
+
+# API Testing
+tavern>=2.4.0
+
+# Contract Testing
+pact-python>=2.2.0
+
+# 📱 Notification Channels (Optional)
+# Telegram Bot API
+python-telegram-bot>=20.7
+
+# Push Notifications
+pyfcm>=1.5.4
+
+# SMS Notifications (Twilio)
+twilio>=8.12.0
+
+# 🌐 External API Integrations (Optional)
+# Exchange APIs
+ccxt>=4.1.77  # Cryptocurrency exchange library
+
+# Trading Indicators
+ta-lib>=0.4.28  # Technical Analysis Library
+pandas-ta>=0.3.14b0  # Pandas Technical Analysis
+
+# Market Data
+yfinance>=0.2.28
+alpha-vantage>=2.3.1
+
+# News APIs
+newsapi-python>=0.2.7
+
+# Social Media Sentiment
+tweepy>=4.14.0
+
+# 🔄 Data Streaming (Optional)
+# Real-time Data Streaming
+kafka-python>=2.0.2
+aiokafka>=0.10.0
+
+# WebSocket Client (additional)
+websocket-client>=1.6.4

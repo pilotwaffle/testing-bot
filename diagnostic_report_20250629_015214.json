@@ -1,0 +1,352 @@
+{
+  "timestamp": "2025-06-29T01:51:52.413654",
+  "ml_training": {
+    "ml_status": {
+      "success": true,
+      "status_code": 200,
+      "response_time": 2.083614,
+      "content_type": "application/json",
+      "content_length": 236,
+      "data": {
+        "status": "available",
+        "models_available": 4,
+        "models": [
+          {
+            "name": "Lorentzian Classifier",
+            "status": "ready"
+          },
+          {
+            "name": "Neural Network",
+            "status": "ready"
+          },
+          {
+            "name": "Social Sentiment",
+            "status": "ready"
+          },
+          {
+            "name": "Risk Assessment",
+            "status": "ready"
+          }
+        ]
+      }
+    },
+    "ml_models": {
+      "success": true,
+      "status_code": 404,
+      "response_time": 0.003047,
+      "content_type": "application/json",
+      "content_length": 22,
+      "data": {
+        "detail": "Not Found"
+      }
+    },
+    "ml_test": {
+      "success": true,
+      "status_code": 404,
+      "response_time": 0.002779,
+      "content_type": "application/json",
+      "content_length": 22,
+      "data": {
+        "detail": "Not Found"
+      }
+    },
+    "train_lorentzian_classifier": {
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.002915,
+      "content_type": "application/json",
+      "content_length": 168,
+      "data": {
+        "status": "success",
+        "message": "Training lorentzian model (test mode)",
+        "model_type": "lorentzian",
+        "estimated_time": "2-5 minutes",
+        "timestamp": "2025-06-29T01:51:54.520247"
+      }
+    },
+    "train_neural_network": {
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.002847,
+      "content_type": "application/json",
+      "content_length": 160,
+      "data": {
+        "status": "success",
+        "message": "Training neural model (test mode)",
+        "model_type": "neural",
+        "estimated_time": "2-5 minutes",
+        "timestamp": "2025-06-29T01:51:54.525862"
+      }
+    },
+    "train_social_sentiment": {
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.00252,
+      "content_type": "application/json",
+      "content_length": 166,
+      "data": {
+        "status": "success",
+        "message": "Training sentiment model (test mode)",
+        "model_type": "sentiment",
+        "estimated_time": "2-5 minutes",
+        "timestamp": "2025-06-29T01:51:54.530723"
+      }
+    },
+    "train_risk_assessment": {
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.002225,
+      "content_type": "application/json",
+      "content_length": 156,
+      "data": {
+        "status": "success",
+        "message": "Training risk model (test mode)",
+        "model_type": "risk",
+        "estimated_time": "2-5 minutes",
+        "timestamp": "2025-06-29T01:51:54.535705"
+      }
+    },
+    "train_all": {
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.002865,
+      "content_type": "application/json",
+      "content_length": 154,
+      "data": {
+        "status": "success",
+        "message": "Training all model (test mode)",
+        "model_type": "all",
+        "estimated_time": "2-5 minutes",
+        "timestamp": "2025-06-29T01:51:54.540620"
+      }
+    }
+  },
+  "chat": {
+    "chat_message_Hello": {
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.00104,
+      "content_type": "application/json",
+      "content_length": 197,
+      "data": {
+        "response": "I received your message: 'Hello'. I'm learning to provide better responses!",
+        "message_type": "text",
+        "intent": "general_chat",
+        "response_time": 0.1,
+        "timestamp": "2025-06-29T01:51:54.548166"
+      }
+    },
+    "chat_message_status": {
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.000758,
+      "content_type": "application/json",
+      "content_length": 181,
+      "data": {
+        "response": "\ud83d\ude80 Elite Trading Bot is running! All systems operational.",
+        "message_type": "text",
+        "intent": "general_chat",
+        "response_time": 0.1,
+        "timestamp": "2025-06-29T01:51:54.549832"
+      }
+    },
+    "chat_message_help": {
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.000658,
+      "content_type": "application/json",
+      "content_length": 210,
+      "data": {
+        "response": "\ud83d\udca1 Available commands: status, help, portfolio, market. Ask me anything about trading!",
+        "message_type": "text",
+        "intent": "general_chat",
+        "response_time": 0.1,
+        "timestamp": "2025-06-29T01:51:54.552273"
+      }
+    },
+    "chat_message_What's my ": {
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.000762,
+      "content_type": "application/json",
+      "content_length": 184,
+      "data": {
+        "response": "\ud83d\udcca Portfolio analysis coming soon! Currently in development.",
+        "message_type": "text",
+        "intent": "general_chat",
+        "response_time": 0.1,
+        "timestamp": "2025-06-29T01:51:54.553305"
+      }
+    },
+    "chat_message_Should I b": {
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.000717,
+      "content_type": "application/json",
+      "content_length": 213,
+      "data": {
+        "response": "I received your message: 'Should I buy Bitcoin?'. I'm learning to provide better responses!",
+        "message_type": "text",
+        "intent": "general_chat",
+        "response_time": 0.1,
+        "timestamp": "2025-06-29T01:51:54.554300"
+      }
+    },
+    "websocket": {
+      "success": true,
+      "status": "connected",
+      "message_sent": true,
+      "response_received": true,
+      "response": "{\"type\": \"chat_response\", \"response\": \"WebSocket received: WebSocket test\", \"timestamp\": \"2025-06-29T01:51:56.616678\"}"
+    },
+    "chat_health": {
+      "success": true,
+      "status_code": 404,
+      "response_time": 0.002999,
+      "content_type": "application/json",
+      "content_length": 22,
+      "data": {
+        "detail": "Not Found"
+      }
+    }
+  },
+  "status_button": {
+    "main_status": {
+      "success": true,
+      "status_code": 404,
+      "response_time": 0.002578,
+      "content_type": "application/json",
+      "content_length": 22,
+      "data": {
+        "detail": "Not Found"
+      }
+    },
+    "health_check": {
+      "success": true,
+      "status_code": 200,
+      "response_time": 0.002859,
+      "content_type": "application/json",
+      "content_length": 174,
+      "data": {
+        "status": "healthy",
+        "components": {
+          "server": true,
+          "templates": true,
+          "static_files": true,
+          "dashboard_template": true,
+          "chat_template": true
+        },
+        "timestamp": "2025-06-29T01:51:56.635445"
+      }
+    },
+    "system_info": {
+      "success": true,
+      "status_code": 404,
+      "response_time": 0.002828,
+      "content_type": "application/json",
+      "content_length": 22,
+      "data": {
+        "detail": "Not Found"
+      }
+    },
+    "performance": {
+      "success": true,
+      "status_code": 404,
+      "response_time": 0.00233,
+      "content_type": "application/json",
+      "content_length": 22,
+      "data": {
+        "detail": "Not Found"
+      }
+    }
+  },
+  "market_data": {
+    "general_market_data": {
+      "success": true,
+      "status_code": 404,
+      "response_time": 0.002597,
+      "content_type": "application/json",
+      "content_length": 22,
+      "data": {
+        "detail": "Not Found"
+      }
+    },
+    "symbol_BTC_USD": {
+      "success": true,
+      "status_code": 404,
+      "response_time": 0.002113,
+      "content_type": "application/json",
+      "content_length": 22,
+      "data": {
+        "detail": "Not Found"
+      }
+    },
+    "symbol_ETH_USD": {
+      "success": true,
+      "status_code": 404,
+      "response_time": 0.001591,
+      "content_type": "application/json",
+      "content_length": 22,
+      "data": {
+        "detail": "Not Found"
+      }
+    },
+    "symbol_LTC_USD": {
+      "success": true,
+      "status_code": 404,
+      "response_time": 0.001606,
+      "content_type": "application/json",
+      "content_length": 22,
+      "data": {
+        "detail": "Not Found"
+      }
+    },
+    "kraken_market_data": {
+      "success": true,
+      "status_code": 404,
+      "response_time": 0.001481,
+      "content_type": "application/json",
+      "content_length": 22,
+      "data": {
+        "detail": "Not Found"
+      }
+    },
+    "historical_data": {
+      "success": true,
+      "status_code": 404,
+      "response_time": 0.001749,
+      "content_type": "application/json",
+      "content_length": 22,
+      "data": {
+        "detail": "Not Found"
+      }
+    },
+    "realtime_prices": {
+      "success": true,
+      "status_code": 404,
+      "response_time": 0.001293,
+      "content_type": "application/json",
+      "content_length": 22,
+      "data": {
+        "detail": "Not Found"
+      }
+    }
+  },
+  "frontend": {
+    "ml_section_exists": true,
+    "training_buttons_count": 0,
+    "status_button_exists": false,
+    "market_data_button_exists": false,
+    "chat_interface_exists": true,
+    "chat_messages_count": 4
+  },
+  "overall_health": {
+    "server_responsive": true,
+    "response_time": 2.0368974208831787,
+    "critical_endpoints_working": 5,
+    "critical_endpoints_total": 5,
+    "endpoint_success_rate": 100.0,
+    "avg_response_time": 0.0022052764892578126,
+    "load_test_stable": true
+  }
+}

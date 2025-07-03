@@ -1,0 +1,85 @@
+{
+    "file_validation": {
+        "dashboard.html": "PASS",
+        "style.css": "PASS",
+        "enhanced-dashboard.js": "PASS",
+        "main.py_endpoints": "FAIL"
+    },
+    "api_tests": [
+        {
+            "endpoint": "/api/market-data",
+            "method": "GET",
+            "status": "FAIL",
+            "details": "Timeout Error"
+        },
+        {
+            "endpoint": "/api/portfolio",
+            "method": "GET",
+            "status": "FAIL",
+            "details": "Timeout Error"
+        },
+        {
+            "endpoint": "/api/portfolio/enhanced",
+            "method": "GET",
+            "status": "FAIL",
+            "details": "Timeout Error"
+        },
+        {
+            "endpoint": "/api/system/metrics",
+            "method": "GET",
+            "status": "FAIL",
+            "details": "Timeout Error"
+        },
+        {
+            "endpoint": "/api/ml/status",
+            "method": "GET",
+            "status": "FAIL",
+            "details": "Timeout Error"
+        },
+        {
+            "endpoint": "/api/chat",
+            "method": "POST",
+            "status": "FAIL",
+            "details": "Expected 200, Got 500",
+            "response": "{\"error\":\"API Error\",\"detail\":\"Internal server error in chat: unhashable type: 'slice'\",\"status_code\":500,\"path\":\"/api/chat\",\"timestamp\":\"2025-07-01T10:27:50.606896\",\"service\":\"Elite Trading Bot V3.0\"}"
+        }
+    ],
+    "performance_tests": {
+        "/api/market-data": {
+            "avg_ms": "2074.5",
+            "range_ms": "2048.9-2154.2"
+        },
+        "/api/portfolio": {
+            "avg_ms": "2079.8",
+            "range_ms": "2067.5-2095.6"
+        },
+        "/health": {
+            "avg_ms": "3114.7",
+            "range_ms": "3075.7-3323.6"
+        }
+    },
+    "concurrent_requests": {
+        "/api/market-data": {
+            "duration_s": "2.09",
+            "successful": 10,
+            "total": 10
+        }
+    },
+    "summary": {
+        "total_tests": 23,
+        "successful_tests": 14,
+        "failed_tests": 9,
+        "success_rate": 60.86956521739131
+    },
+    "failed_list": [
+        "\u2022 main.py endpoint '@app.get(\"/api/market-data\")': Missing",
+        "\u2022 main.py endpoint '@app.post(\"/api/chat\")': Missing",
+        "\u2022 main.py endpoint '@app.get(\"/health\")': Missing",
+        "\u2022 GET /api/market-data: Timeout Error",
+        "\u2022 GET /api/portfolio: Timeout Error",
+        "\u2022 GET /api/portfolio/enhanced: Timeout Error",
+        "\u2022 GET /api/system/metrics: Timeout Error",
+        "\u2022 GET /api/ml/status: Timeout Error",
+        "\u2022 POST /api/chat: Expected Status 200, Got 500 - Response: {\"error\":\"API Error\",\"detail\":\"Internal server error in chat: unhashable type: 'slice'\",\"status_code"
+    ]
+}

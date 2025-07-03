@@ -1,0 +1,53 @@
+{
+  "exchange": {
+    "name": "kraken",
+    "api_key": "YOUR_API_KEY_HERE",
+    "secret": "YOUR_SECRET_HERE",
+    "sandbox": true,
+    "rate_limit": 1200,
+    "timeout": 30000
+  },
+  "paths": {
+    "data_cache_dir": "data/cache/",
+    "model_save_path": "models/",
+    "performance_log_path": "logs/",
+    "strategy_config_path": "config/strategy_config.json",
+    "monitor_config_path": "config/monitor_config.json"
+  },
+  "trading": {
+    "symbols": [
+      "BTC/USD",
+      "ETH/USD",
+      "ADA/USD"
+    ],
+    "timeframes": [
+      "1h",
+      "4h",
+      "1d"
+    ],
+    "live_trading_enabled": false,
+    "signal_generation_interval_minutes": 15,
+    "max_concurrent_positions": 3,
+    "portfolio_allocation": {
+      "BTC/USD": 0.4,
+      "ETH/USD": 0.35,
+      "ADA/USD": 0.25
+    }
+  },
+  "risk_management": {
+    "max_portfolio_risk": 0.1,
+    "max_daily_loss": 0.05,
+    "emergency_stop_loss": 0.15,
+    "position_timeout_hours": 72
+  },
+  "notifications": {
+    "email_enabled": false,
+    "webhook_enabled": false,
+    "log_all_signals": true
+  },
+  "data_collection": {
+    "historical_data_points": 2000,
+    "real_time_updates": true,
+    "cache_validity_hours": 6
+  }
+}

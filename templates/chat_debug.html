@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .chat-container { max-width: 600px; margin: 0 auto; }
+        .chat-messages { 
+            height: 400px; 
+            border: 1px solid #ccc; 
+            overflow-y: auto; 
+            padding: 10px; 
+            margin-bottom: 10px;
+            background: #f9f9f9;
+        }
+        .message { 
+            margin: 10px 0; 
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+        .user-message { 
+            background: #007bff; 
+            color: white; 
+            text-align: right;
+        }
+        .bot-message { 
+            background: #28a745; 
+            color: white; 
+        }
+        .error-message {
+            background: #dc3545;
+            color: white;
+        }
+        .input-container { 
+            display: flex; 
+            gap: 10px;
+        }
+        .chat-input { 
+            flex: 1; 
+            padding: 10px; 
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .send-button { 
+            padding: 10px 20px; 
+            background: #007bff; 
+            color: white; 
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .debug-panel {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 8px;
+        }
+        .debug-button {
+            margin: 5px;
+            padding: 8px 15px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h1>🔧 Chat Debug Test Page</h1>
+        
+        <div class="debug-panel">
+            <h3>Debug Controls</h3>
+            <button class="debug-button" onclick="testAPI()">Test API</button>
+            <button class="debug-button" onclick="testWebSocket()">Test WebSocket</button>
+            <button class="debug-button" onclick="testChat('status')">Test 'status' command</button>
+            <button class="debug-button" onclick="testChat('help')">Test 'help' command</button>
+            <button class="debug-button" onclick="clearLogs()">Clear Console</button>
+        </div>
+        
+        <div class="chat-messages" id="chat-messages">
+            <div class="message bot-message">
+                <strong>Debug Bot:</strong> Chat debug interface loaded. Check console (F12) for detailed logs.
+            </div>
+        </div>
+        
+        <div class="input-container">
+            <input type="text" id="chat-input" class="chat-input"
+                   placeholder="Type your message..." onkeypress="handleEnter(event)" autofocus>
+            <button class="send-button" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // Debug functions
+        async function testAPI() {
+            console.log('🧪 Manual API Test');
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: 'API test' })
+            });
+            const data = await response.json();
+            console.log('📊 API Response:', data);
+            if (window.debugChat) {
+                window.debugChat.handleChatResponse(data);
+            }
+        }
+        
+        function testWebSocket() {
+            console.log('🧪 Manual WebSocket Test');
+            if (window.debugChat) {
+                window.debugChat.testWebSocket();
+            }
+        }
+        
+        function testChat(message) {
+            console.log('🧪 Testing chat with message:', message);
+            document.getElementById('chat-input').value = message;
+            sendMessage();
+        }
+        
+        function clearLogs() {
+            console.clear();
+            console.log('🧹 Console cleared');
+        }
+    </script>
+    
+    <script src="/static/js/chat.js"></script>
+</body>
+</html>

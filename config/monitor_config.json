@@ -1,0 +1,27 @@
+{
+  "performance_metrics": {
+    "tracking_enabled": true,
+    "calculation_frequency_minutes": 5,
+    "history_retention_days": 365,
+    "benchmark_symbol": "BTC/USD"
+  },
+  "alerts": {
+    "portfolio_loss_threshold": 0.05,
+    "daily_loss_threshold": 0.03,
+    "consecutive_losses_threshold": 5,
+    "low_balance_threshold": 1000,
+    "high_volatility_threshold": 0.1
+  },
+  "reporting": {
+    "daily_summary_enabled": true,
+    "weekly_report_enabled": true,
+    "performance_charts_enabled": true,
+    "trade_analysis_enabled": true
+  },
+  "system_health": {
+    "memory_usage_threshold": 0.85,
+    "cpu_usage_threshold": 0.8,
+    "disk_space_threshold": 0.9,
+    "api_latency_threshold_ms": 5000
+  }
+}

@@ -1,0 +1,810 @@
+# Imports added by quick_fix_script.py for Elite Trading Bot V3.0
+# Location: E:\Trade Chat Bot\G Trading Bot\core\kraken_futures_client.py
+# Added missing type hints and standard imports
+
+from typing import List, Dict, Optional, Union, Any
+import asyncio
+import logging
+import json
+import time
+from datetime import datetime
+
+import asyncio
+import aiohttp
+import hashlib
+import hmac
+import base64
+import time
+import json
+import logging
+from typing import Dict, List, Optional, Any, Tuple
+from datetime import datetime, timedelta
+import pandas as pd
+import numpy as np
+
+class KrakenFuturesClient:
+    """
+    Kraken Futures Paper Trading Client for demo-futures.kraken.com
+    Integrated with EliteTradingEngine architecture
+    """
+    
+    def __init__(self, api_key: str, api_secret: str, sandbox: bool = True):
+        self.api_key = api_key
+        self.api_secret = api_secret
+        self.sandbox = sandbox
+        self.base_url = "https://demo-futures.kraken.com" if sandbox else "https://futures.kraken.com"
+        self.session = None
+        self.logger = logging.getLogger(f"{__name__}.KrakenFutures")
+        
+        # Rate limiting
+        self.last_request_time = 0
+        self.min_request_interval = 0.1  # 100ms between requests
+        
+        # Market data cache
+        self.instruments_cache = {}
+        self.orderbook_cache = {}
+        self.last_cache_update = 0
+        self.cache_ttl = 30  # 30 seconds
+        
+        # Paper trading state
+        self.paper_portfolio = {
+            'cash': 100000.0,  # $100k virtual cash
+            'positions': {},
+            'orders': {},
+            'trades': [],
+            'pnl': 0.0,
+            'total_value': 100000.0
+        }
+        
+    async def __aenter__(self):
+        """Async context manager entry"""
+        self.session = aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=30),
+            headers={'User-Agent': 'EliteTradingBot/3.0'}
+        )
+        await self.initialize()
+        return self
+        
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit"""
+        if self.session:
+            await self.session.close()
+            
+    async def initialize(self):
+        """Initialize client and fetch instruments"""
+        try:
+            self.logger.info("Initializing Kraken Futures client...")
+            
+            # Test connection
+            instruments = await self.get_instruments()
+            self.logger.info(f"Connected to Kraken Futures - {len(instruments)} instruments available")
+            
+            # Initialize paper portfolio tracking
+            await self._initialize_paper_portfolio()
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to initialize Kraken Futures client: {e}")
+            return False
+    
+    def _generate_signature(self, endpoint: str, nonce: str, data: str = "") -> str:
+        """Generate API signature for authenticated requests"""
+        try:
+            # Create the message to sign
+            message = data + nonce + endpoint
+            
+            # Decode the secret
+            secret_decoded = base64.b64decode(self.api_secret)
+            
+            # Create HMAC signature
+            signature = hmac.new(
+                secret_decoded,
+                message.encode('utf-8'),
+                hashlib.sha512
+            )
+            
+            return base64.b64encode(signature.digest()).decode('utf-8')
+            
+        except Exception as e:
+            self.logger.error(f"Error generating signature: {e}")
+            raise
+    
+    async def _rate_limit(self):
+        """Enforce rate limiting"""
+        now = time.time()
+        time_since_last = now - self.last_request_time
+        
+        if time_since_last < self.min_request_interval:
+            await asyncio.sleep(self.min_request_interval - time_since_last)
+        
+        self.last_request_time = time.time()
+    
+    async def _make_request(self, method: str, endpoint: str, auth: bool = False, data: Dict = None) -> Dict:
+        """Make HTTP request to Kraken Futures API"""
+        await self._rate_limit()
+        
+        url = f"{self.base_url}/derivatives/api/v3{endpoint}"
+        headers = {'Content-Type': 'application/json'}
+        
+        if auth:
+            nonce = str(int(time.time() * 1000))
+            post_data = json.dumps(data) if data else ""
+            
+            signature = self._generate_signature(endpoint, nonce, post_data)
+            
+            headers.update({
+                'APIKey': self.api_key,
+                'Nonce': nonce,
+                'Authent': signature
+            })
+        
+        try:
+            async with self.session.request(
+                method, url, 
+                headers=headers, 
+                data=json.dumps(data) if data else None
+            ) as response:
+                
+                response_text = await response.text()
+                
+                if response.status == 200:
+                    return json.loads(response_text)
+                else:
+                    self.logger.error(f"API request failed: {response.status} - {response_text}")
+                    raise Exception(f"API Error: {response.status} - {response_text}")
+                    
+        except Exception as e:
+            self.logger.error(f"Request failed: {method} {endpoint} - {e}")
+            raise
+    
+    # ==================== PUBLIC ENDPOINTS ====================
+    
+    async def get_instruments(self) -> List[Dict]:
+        """Get all available instruments"""
+        try:
+            if (time.time() - self.last_cache_update) < self.cache_ttl and self.instruments_cache:
+                return list(self.instruments_cache.values())
+            
+            response = await self._make_request('GET', '/instruments')
+            
+            if response.get('result') == 'success':
+                instruments = response.get('instruments', [])
+                
+                # Cache instruments
+                self.instruments_cache = {inst['symbol']: inst for inst in instruments}
+                self.last_cache_update = time.time()
+                
+                return instruments
+            else:
+                raise Exception(f"Failed to get instruments: {response}")
+                
+        except Exception as e:
+            self.logger.error(f"Error getting instruments: {e}")
+            return []
+    
+    async def get_orderbook(self, symbol: str) -> Dict:
+        """Get orderbook for symbol"""
+        try:
+            response = await self._make_request('GET', f'/orderbook?symbol={symbol}')
+            
+            if response.get('result') == 'success':
+                orderbook = response.get('orderBook', {})
+                
+                # Cache orderbook
+                self.orderbook_cache[symbol] = {
+                    'data': orderbook,
+                    'timestamp': time.time()
+                }
+                
+                return orderbook
+            else:
+                raise Exception(f"Failed to get orderbook: {response}")
+                
+        except Exception as e:
+            self.logger.error(f"Error getting orderbook for {symbol}: {e}")
+            return {}
+    
+    async def get_ticker(self, symbol: str) -> Dict:
+        """Get ticker data for symbol"""
+        try:
+            response = await self._make_request('GET', f'/tickers?symbol={symbol}')
+            
+            if response.get('result') == 'success':
+                tickers = response.get('tickers', [])
+                if tickers:
+                    return tickers[0]
+            
+            return {}
+            
+        except Exception as e:
+            self.logger.error(f"Error getting ticker for {symbol}: {e}")
+            return {}
+    
+    async def get_market_data(self, symbols: List[str] = None) -> Dict:
+        """Get comprehensive market data for ML analysis"""
+        try:
+            if not symbols:
+                instruments = await self.get_instruments()
+                symbols = [inst['symbol'] for inst in instruments[:10]]  # Top 10 instruments
+            
+            market_data = {
+                'timestamp': time.time(),
+                'instruments': {},
+                'summary': {
+                    'total_instruments': len(symbols),
+                    'active_symbols': [],
+                    'avg_spread': 0,
+                    'total_volume_24h': 0
+                }
+            }
+            
+            total_spread = 0
+            valid_spreads = 0
+            
+            for symbol in symbols:
+                try:
+                    # Get ticker data
+                    ticker = await self.get_ticker(symbol)
+                    
+                    if ticker:
+                        market_data['instruments'][symbol] = {
+                            'symbol': symbol,
+                            'last_price': ticker.get('last', 0),
+                            'bid': ticker.get('bid', 0),
+                            'ask': ticker.get('ask', 0),
+                            'volume_24h': ticker.get('vol24h', 0),
+                            'change_24h': ticker.get('change24h', 0),
+                            'high_24h': ticker.get('high24h', 0),
+                            'low_24h': ticker.get('low24h', 0),
+                            'spread': 0,
+                            'spread_pct': 0
+                        }
+                        
+                        # Calculate spread
+                        bid = ticker.get('bid', 0)
+                        ask = ticker.get('ask', 0)
+                        last = ticker.get('last', 0)
+                        
+                        if bid > 0 and ask > 0:
+                            spread = ask - bid
+                            spread_pct = (spread / last) * 100 if last > 0 else 0
+                            
+                            market_data['instruments'][symbol]['spread'] = spread
+                            market_data['instruments'][symbol]['spread_pct'] = spread_pct
+                            
+                            total_spread += spread_pct
+                            valid_spreads += 1
+                        
+                        market_data['summary']['active_symbols'].append(symbol)
+                        market_data['summary']['total_volume_24h'] += ticker.get('vol24h', 0)
+                        
+                    await asyncio.sleep(0.1)  # Rate limiting
+                    
+                except Exception as e:
+                    self.logger.warning(f"Failed to get data for {symbol}: {e}")
+                    continue
+            
+            # Calculate averages
+            if valid_spreads > 0:
+                market_data['summary']['avg_spread'] = total_spread / valid_spreads
+            
+            return market_data
+            
+        except Exception as e:
+            self.logger.error(f"Error getting market data: {e}")
+            return {}
+    
+    # ==================== AUTHENTICATED ENDPOINTS ====================
+    
+    async def get_account_info(self) -> Dict:
+        """Get account information"""
+        try:
+            response = await self._make_request('GET', '/accounts', auth=True)
+            
+            if response.get('result') == 'success':
+                return response.get('accounts', {})
+            else:
+                # Return paper trading account info
+                return {
+                    'type': 'paper_trading',
+                    'cash': self.paper_portfolio['cash'],
+                    'total_value': self.paper_portfolio['total_value'],
+                    'pnl': self.paper_portfolio['pnl'],
+                    'positions': len(self.paper_portfolio['positions']),
+                    'orders': len(self.paper_portfolio['orders'])
+                }
+                
+        except Exception as e:
+            self.logger.warning(f"Auth failed, using paper account: {e}")
+            return await self._get_paper_account_info()
+    
+    async def get_positions(self) -> List[Dict]:
+        """Get current positions"""
+        try:
+            response = await self._make_request('GET', '/openpositions', auth=True)
+            
+            if response.get('result') == 'success':
+                return response.get('openPositions', [])
+            else:
+                # Return paper positions
+                return list(self.paper_portfolio['positions'].values())
+                
+        except Exception as e:
+            self.logger.warning(f"Auth failed, using paper positions: {e}")
+            return await self._get_paper_positions()
+    
+    async def place_order(self, symbol: str, side: str, size: float, 
+                         order_type: str = 'lmt', price: float = None, 
+                         stop_price: float = None) -> Dict:
+        """
+        Place order (paper trading simulation)
+        
+        Args:
+            symbol: Trading symbol
+            side: 'buy' or 'sell'
+            size: Order size
+            order_type: 'lmt', 'mkt', 'stp', 'take_profit'
+            price: Limit price (for limit orders)
+            stop_price: Stop price (for stop orders)
+        """
+        try:
+            # Generate order ID
+            order_id = f"paper_{int(time.time() * 1000)}"
+            
+            # Get current market price
+            ticker = await self.get_ticker(symbol)
+            current_price = ticker.get('last', 0) if ticker else 0
+            
+            if current_price == 0:
+                raise Exception(f"Unable to get current price for {symbol}")
+            
+            # Validate order
+            if order_type == 'lmt' and not price:
+                raise Exception("Limit orders require a price")
+            
+            if order_type in ['stp', 'take_profit'] and not stop_price:
+                raise Exception("Stop orders require a stop price")
+            
+            # Create order
+            order = {
+                'order_id': order_id,
+                'symbol': symbol,
+                'side': side,
+                'size': size,
+                'order_type': order_type,
+                'price': price,
+                'stop_price': stop_price,
+                'status': 'open',
+                'timestamp': time.time(),
+                'current_price': current_price
+            }
+            
+            # For market orders, execute immediately
+            if order_type == 'mkt':
+                execution_result = await self._execute_paper_order(order)
+                return execution_result
+            
+            # Store pending order
+            self.paper_portfolio['orders'][order_id] = order
+            
+            self.logger.info(f"Paper order placed: {order_id} - {side} {size} {symbol} @ {price or 'market'}")
+            
+            return {
+                'result': 'success',
+                'order_id': order_id,
+                'status': 'open',
+                'message': 'Paper order placed successfully'
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error placing order: {e}")
+            return {
+                'result': 'error',
+                'message': str(e)
+            }
+    
+    async def cancel_order(self, order_id: str) -> Dict:
+        """Cancel order"""
+        try:
+            if order_id in self.paper_portfolio['orders']:
+                del self.paper_portfolio['orders'][order_id]
+                
+                return {
+                    'result': 'success',
+                    'order_id': order_id,
+                    'message': 'Paper order cancelled'
+                }
+            else:
+                return {
+                    'result': 'error',
+                    'message': 'Order not found'
+                }
+                
+        except Exception as e:
+            self.logger.error(f"Error cancelling order: {e}")
+            return {
+                'result': 'error',
+                'message': str(e)
+            }
+    
+    # ==================== PAPER TRADING SIMULATION ====================
+    
+    async def _initialize_paper_portfolio(self):
+        """Initialize paper trading portfolio"""
+        self.paper_portfolio.update({
+            'cash': 100000.0,
+            'positions': {},
+            'orders': {},
+            'trades': [],
+            'pnl': 0.0,
+            'total_value': 100000.0,
+            'start_time': time.time(),
+            'trade_count': 0
+        })
+        
+        self.logger.info("Paper trading portfolio initialized with $100,000")
+    
+    async def _execute_paper_order(self, order: Dict) -> Dict:
+        """Execute paper trading order"""
+        try:
+            symbol = order['symbol']
+            side = order['side']
+            size = order['size']
+            price = order.get('price') or order['current_price']
+            
+            # Calculate trade value
+            trade_value = size * price
+            
+            # Check available cash for buy orders
+            if side == 'buy' and trade_value > self.paper_portfolio['cash']:
+                return {
+                    'result': 'error',
+                    'message': 'Insufficient cash for order'
+                }
+            
+            # Execute trade
+            trade_id = f"trade_{int(time.time() * 1000)}"
+            
+            trade = {
+                'trade_id': trade_id,
+                'order_id': order['order_id'],
+                'symbol': symbol,
+                'side': side,
+                'size': size,
+                'price': price,
+                'value': trade_value,
+                'timestamp': time.time(),
+                'fee': trade_value * 0.0005  # 0.05% fee
+            }
+            
+            # Update portfolio
+            await self._update_paper_portfolio(trade)
+            
+            # Store trade
+            self.paper_portfolio['trades'].append(trade)
+            self.paper_portfolio['trade_count'] += 1
+            
+            # Remove from orders if exists
+            if order['order_id'] in self.paper_portfolio['orders']:
+                del self.paper_portfolio['orders'][order['order_id']]
+            
+            self.logger.info(f"Paper trade executed: {trade_id} - {side} {size} {symbol} @ {price}")
+            
+            return {
+                'result': 'success',
+                'trade_id': trade_id,
+                'order_id': order['order_id'],
+                'status': 'filled',
+                'message': 'Paper trade executed successfully'
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error executing paper order: {e}")
+            return {
+                'result': 'error',
+                'message': str(e)
+            }
+    
+    async def _update_paper_portfolio(self, trade: Dict):
+        """Update paper portfolio after trade execution"""
+        symbol = trade['symbol']
+        side = trade['side']
+        size = trade['size']
+        value = trade['value']
+        fee = trade['fee']
+        
+        # Update cash
+        if side == 'buy':
+            self.paper_portfolio['cash'] -= (value + fee)
+        else:
+            self.paper_portfolio['cash'] += (value - fee)
+        
+        # Update positions
+        if symbol not in self.paper_portfolio['positions']:
+            self.paper_portfolio['positions'][symbol] = {
+                'symbol': symbol,
+                'size': 0,
+                'avg_price': 0,
+                'unrealized_pnl': 0,
+                'realized_pnl': 0
+            }
+        
+        position = self.paper_portfolio['positions'][symbol]
+        
+        if side == 'buy':
+            # Update average price
+            total_size = position['size'] + size
+            if total_size > 0:
+                position['avg_price'] = ((position['avg_price'] * position['size']) + (trade['price'] * size)) / total_size
+            position['size'] += size
+        else:
+            # Calculate realized PnL for sell
+            if position['size'] > 0:
+                realized_pnl = (trade['price'] - position['avg_price']) * min(size, position['size'])
+                position['realized_pnl'] += realized_pnl
+                self.paper_portfolio['pnl'] += realized_pnl
+            
+            position['size'] -= size
+        
+        # Remove position if size is zero
+        if position['size'] <= 0:
+            if symbol in self.paper_portfolio['positions']:
+                del self.paper_portfolio['positions'][symbol]
+    
+    async def _get_paper_account_info(self) -> Dict:
+        """Get paper trading account info"""
+        # Calculate total portfolio value
+        total_value = self.paper_portfolio['cash']
+        
+        for symbol, position in self.paper_portfolio['positions'].items():
+            try:
+                ticker = await self.get_ticker(symbol)
+                current_price = ticker.get('last', 0) if ticker else 0
+                
+                if current_price > 0:
+                    position_value = position['size'] * current_price
+                    total_value += position_value
+                    
+                    # Update unrealized PnL
+                    unrealized_pnl = (current_price - position['avg_price']) * position['size']
+                    position['unrealized_pnl'] = unrealized_pnl
+                    
+            except Exception as e:
+                self.logger.warning(f"Error updating position value for {symbol}: {e}")
+        
+        self.paper_portfolio['total_value'] = total_value
+        
+        return {
+            'type': 'paper_trading',
+            'cash': self.paper_portfolio['cash'],
+            'total_value': total_value,
+            'pnl': self.paper_portfolio['pnl'],
+            'positions': len(self.paper_portfolio['positions']),
+            'orders': len(self.paper_portfolio['orders']),
+            'trades': self.paper_portfolio['trade_count'],
+            'start_value': 100000.0,
+            'return_pct': ((total_value - 100000.0) / 100000.0) * 100
+        }
+    
+    async def _get_paper_positions(self) -> List[Dict]:
+        """Get paper trading positions"""
+        positions = []
+        
+        for symbol, position in self.paper_portfolio['positions'].items():
+            try:
+                ticker = await self.get_ticker(symbol)
+                current_price = ticker.get('last', 0) if ticker else 0
+                
+                if current_price > 0:
+                    unrealized_pnl = (current_price - position['avg_price']) * position['size']
+                    position_value = position['size'] * current_price
+                    
+                    positions.append({
+                        'symbol': symbol,
+                        'size': position['size'],
+                        'avg_price': position['avg_price'],
+                        'current_price': current_price,
+                        'position_value': position_value,
+                        'unrealized_pnl': unrealized_pnl,
+                        'realized_pnl': position['realized_pnl'],
+                        'return_pct': (unrealized_pnl / (position['avg_price'] * position['size'])) * 100 if position['size'] > 0 else 0
+                    })
+                    
+            except Exception as e:
+                self.logger.warning(f"Error getting position data for {symbol}: {e}")
+        
+        return positions
+    
+    # ==================== ML DATA PREPARATION ====================
+    
+    async def get_ml_features(self, symbol: str, timeframe: str = '1h', limit: int = 100) -> pd.DataFrame:
+        """Get market data formatted for ML analysis"""
+        try:
+            # Get historical data (simulate with current + noise for demo)
+            ticker = await self.get_ticker(symbol)
+            orderbook = await self.get_orderbook(symbol)
+            
+            if not ticker or not orderbook:
+                return pd.DataFrame()
+            
+            # Create synthetic historical data for ML (in real implementation, use actual OHLCV data)
+            base_price = ticker.get('last', 100)
+            timestamps = [datetime.now() - timedelta(hours=i) for i in range(limit)]
+            timestamps.reverse()
+            
+            # Generate synthetic OHLCV data with realistic patterns
+            np.random.seed(42)  # For reproducible results
+            returns = np.random.normal(0, 0.02, limit)  # 2% volatility
+            
+            prices = [base_price]
+            for ret in returns[1:]:
+                prices.append(prices[-1] * (1 + ret))
+            
+            # Create DataFrame
+            data = []
+            for i, (timestamp, price) in enumerate(zip(timestamps, prices)):
+                high = price * (1 + abs(np.random.normal(0, 0.01)))
+                low = price * (1 - abs(np.random.normal(0, 0.01)))
+                volume = np.random.uniform(1000, 10000)
+                
+                data.append({
+                    'timestamp': timestamp,
+                    'open': prices[i-1] if i > 0 else price,
+                    'high': max(price, high),
+                    'low': min(price, low),
+                    'close': price,
+                    'volume': volume,
+                    'symbol': symbol
+                })
+            
+            df = pd.DataFrame(data)
+            
+            # Add technical indicators for ML
+            df['sma_20'] = df['close'].rolling(20).mean()
+            df['sma_50'] = df['close'].rolling(50).mean()
+            df['rsi'] = self._calculate_rsi(df['close'])
+            df['bb_upper'], df['bb_lower'] = self._calculate_bollinger_bands(df['close'])
+            df['volume_sma'] = df['volume'].rolling(20).mean()
+            
+            # Add orderbook features
+            if orderbook:
+                bids = orderbook.get('bids', [])
+                asks = orderbook.get('asks', [])
+                
+                if bids and asks:
+                    df['bid_depth'] = sum([float(bid[1]) for bid in bids[:5]])  # Top 5 bids
+                    df['ask_depth'] = sum([float(ask[1]) for ask in asks[:5]])  # Top 5 asks
+                    df['spread'] = float(asks[0][0]) - float(bids[0][0]) if bids and asks else 0
+                    df['mid_price'] = (float(asks[0][0]) + float(bids[0][0])) / 2 if bids and asks else df['close']
+            
+            # Forward fill missing values
+            df = df.fillna(method='ffill').fillna(0)
+            
+            return df
+            
+        except Exception as e:
+            self.logger.error(f"Error preparing ML features for {symbol}: {e}")
+            return pd.DataFrame()
+    
+    def _calculate_rsi(self, prices: pd.Series, period: int = 14) -> pd.Series:
+        """Calculate RSI indicator"""
+        delta = prices.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+        rs = gain / loss
+        return 100 - (100 / (1 + rs))
+    
+    def _calculate_bollinger_bands(self, prices: pd.Series, period: int = 20, std_dev: float = 2) -> Tuple[pd.Series, pd.Series]:
+        """Calculate Bollinger Bands"""
+        sma = prices.rolling(period).mean()
+        std = prices.rolling(period).std()
+        upper = sma + (std * std_dev)
+        lower = sma - (std * std_dev)
+        return upper, lower
+    
+    # ==================== UTILITY METHODS ====================
+    
+    async def get_trading_summary(self) -> Dict:
+        """Get comprehensive trading summary for dashboard"""
+        try:
+            account_info = await self.get_account_info()
+            positions = await self.get_positions()
+            
+            # Calculate portfolio metrics
+            total_pnl = sum([pos.get('unrealized_pnl', 0) + pos.get('realized_pnl', 0) for pos in positions])
+            total_positions = len(positions)
+            
+            # Get market data for active positions
+            active_symbols = [pos['symbol'] for pos in positions] if positions else ['BTC/USD', 'ETH/USD']
+            market_data = await self.get_market_data(active_symbols[:5])  # Limit to 5 symbols
+            
+            return {
+                'timestamp': time.time(),
+                'account': account_info,
+                'positions': positions,
+                'market_data': market_data,
+                'summary': {
+                    'total_pnl': total_pnl,
+                    'total_positions': total_positions,
+                    'active_orders': len(self.paper_portfolio['orders']),
+                    'trade_count': self.paper_portfolio['trade_count'],
+                    'portfolio_value': account_info.get('total_value', 0),
+                    'cash_balance': account_info.get('cash', 0),
+                    'return_pct': account_info.get('return_pct', 0)
+                }
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error getting trading summary: {e}")
+            return {}
+    
+    async def health_check(self) -> Dict:
+        """Check client health status"""
+        try:
+            start_time = time.time()
+            
+            # Test basic connectivity
+            instruments = await self.get_instruments()
+            
+            response_time = (time.time() - start_time) * 1000
+            
+            return {
+                'status': 'healthy' if instruments else 'degraded',
+                'response_time_ms': response_time,
+                'instruments_count': len(instruments),
+                'paper_portfolio_value': self.paper_portfolio['total_value'],
+                'last_update': time.time()
+            }
+            
+        except Exception as e:
+            return {
+                'status': 'unhealthy',
+                'error': str(e),
+                'last_update': time.time()
+            }
+
+# ==================== INTEGRATION HELPERS ====================
+
+async def create_kraken_client(config: Dict) -> KrakenFuturesClient:
+    """Create and initialize Kraken Futures client"""
+    client = KrakenFuturesClient(
+        api_key=config.get('api_key'),
+        api_secret=config.get('api_secret'),
+        sandbox=config.get('sandbox', True)
+    )
+    
+    async with client:
+        await client.initialize()
+        return client
+
+# Example usage for testing
+if __name__ == "__main__":
+    async def test_client():
+        config = {
+            'api_key': 'W/LQxAC/7BBTlMDpUX4fs6n4g0x8EO/UU5y1r0lTTdg+MFiSMXZr3a5C',
+            'api_secret': 'your_secret_here',  # Add your secret
+            'sandbox': True
+        }
+        
+        async with KrakenFuturesClient(**config) as client:
+            # Test basic functionality
+            instruments = await client.get_instruments()
+            print(f"Available instruments: {len(instruments)}")
+            
+            if instruments:
+                symbol = instruments[0]['symbol']
+                ticker = await client.get_ticker(symbol)
+                print(f"Ticker for {symbol}: {ticker}")
+                
+                # Test paper trading
+                order_result = await client.place_order(
+                    symbol=symbol, 
+                    side='buy', 
+                    size=0.1, 
+                    order_type='mkt'
+                )
+                print(f"Order result: {order_result}")
+    
+    # Run test
+    # asyncio.run(test_client())

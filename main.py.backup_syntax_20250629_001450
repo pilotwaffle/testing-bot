@@ -1,0 +1,311 @@
+from dotenv import load_dotenv
+load_dotenv()
+# main.py - COMPLETE WORKING VERSION
+"""
+File: main.py
+Location: E:\Trade Chat Bot\G Trading Bot\main.py
+
+Trading Bot Main Application - COMPLETE WORKING VERSION
+Serves HTML dashboard, includes all routes, integrates all components
+"""
+
+from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse, JSONResponse
+from datetime import datetime
+import uvicorn
+import logging
+import os
+import json
+import asyncio
+from pathlib import Path
+from typing import List, Dict, Any, Optional
+
+# --- Add these lines here ---
+# ---------------------------
+
+# Import core components
+# Assuming these modules exist and define the respective classes/functions
+from core.trading_engine import IndustrialTradingEngine
+from core.ml_engine import MLEngine
+from core.data_fetcher import DataFetcher # Corrected import for DataFetcher
+from core.notification_manager import NotificationManager
+from core.kraken_integration import KrakenIntegration
+from ai.chat_manager import EnhancedChatManager # Ensure this path is correct
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Initialize FastAPI app
+app = FastAPI(title="Industrial Crypto Trading Bot v3.0", version="3.0")
+
+# Initialize templates
+templates = Jinja2Templates(directory="templates")
+
+# Mount static files
+if Path("static").exists():
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+    logger.info("✅ Static files mounted from /static")
+else:
+    logger.warning("⚠️ 'static' directory not found. Static files will not be served.")
+
+# Global instances of components
+trading_engine: Optional[IndustrialTradingEngine] = None
+ml_engine: Optional[MLEngine] = None
+data_fetcher: Optional[DataFetcher] = None
+notification_manager: Optional[NotificationManager] = None
+kraken_integration: Optional[KrakenIntegration] = None
+chat_manager: Optional[EnhancedChatManager] = None
+
+# ... (rest of your main.py code)
+
+
+
+# Initialize core components
+trading_engine = None
+ml_engine = None
+kraken_integration = None
+chat_manager = None
+data_fetcher = None
+notification_manager = None
+
+# WebSocket connections manager
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        logger.info(f"WebSocket connected: {websocket.client}")
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+        logger.info(f"WebSocket disconnected: {websocket.client}")
+
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        await websocket.send_text(message)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            try:
+                await connection.send_text(message)
+            except Exception as e:
+                logger.error(f"Error broadcasting message to {connection.client}: {e}")
+
+manager = ConnectionManager()
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize components when the app starts."""
+    global trading_engine, ml_engine, kraken_integration, chat_manager, data_fetcher, notification_manager
+
+    logger.info("🚀 Initializing application components...")
+
+    # Load environment variables (ensure .env is in project root)
+
+    try:
+        # Initialize Notification Manager
+        notification_manager = NotificationManager() # Assuming NotificationManager from core.notification_manager
+        logger.info("✅ Notification Manager initialized")
+
+        # Initialize Data Fetcher
+        data_fetcher = DataFetcher() # Assuming DataFetcher from core.data_fetcher
+        logger.info("✅ Data Fetcher initialized")
+
+        # Initialize ML Engine
+        ml_engine = MLEngine() # Assuming MLEngine from core.ml_engine
+        logger.info("✅ ML Engine initialized")
+
+        global kraken_integration
+        # --- ADD THIS LINE ---
+        kraken_enabled = os.getenv("KRAKEN_ENABLED", "false").lower() == "true"
+        # ---------------------
+        if kraken_enabled:
+            logger.info("Initializing Kraken Integration...")
+            # Get Kraken API keys and sandbox setting from environment variables
+            kraken_api_key = os.getenv("KRAKEN_API_KEY")
+            kraken_secret = os.getenv("KRAKEN_SECRET")
+            kraken_sandbox = os.getenv("KRAKEN_SANDBOX", "false").lower() == "true"
+
+            if not kraken_api_key or not kraken_secret:
+                logger.error("❌ KRAKEN_API_KEY or KRAKEN_SECRET environment variables are not set. Kraken integration will not be initialized.")
+                kraken_integration = None
+            else:
+                # Initialize the new KrakenIntegration class with API key, secret, and sandbox status
+                kraken_integration = KrakenIntegration(
+                    api_key=kraken_api_key,
+                    secret=kraken_secret,
+                    sandbox=kraken_sandbox
+                )
+                # The simpler KrakenIntegration class initializes itself in __init__,
+                # and does not have a separate 'initialize' async method.
+                # You can remove or comment out any calls like `await kraken_integration.initialize()`
+                logger.info("✅ Kraken Integration initialized.")
+
+        # Initialize Chat Manager with AI and DB
+        google_ai_api_key = os.getenv('GOOGLE_AI_API_KEY')
+        google_ai_enabled = os.getenv('GOOGLE_AI_ENABLED', 'False').lower() == 'true'
+
+        if google_ai_enabled and google_ai_api_key:
+            chat_manager = EnhancedChatManager (
+                ml_engine=ml_engine,
+                data_fetcher=data_fetcher,
+                notification_manager=notification_manager,
+            )
+            )
+            logger.info("✅ Chat Manager initialized with AI support")
+        else:
+            logger.warning("⚠️ Google AI API key not found or AI not enabled. Chat Manager initialized without AI.")
+            chat_manager = EnhancedChatManager (
+                ml_engine=ml_engine,
+                data_fetcher=data_fetcher,
+                notification_manager=notification_manager,
+            )
+            )
+
+        # Initialize Trading Engine LAST, as it depends on other components
+        # Pass necessary initialized instances to the trading engine
+        trading_engine = IndustrialTradingEngine(  # <--- Make sure this line is correct
+            notification_manager_instance=notification_manager,
+            config={
+                "data_fetcher": data_fetcher,
+                "ml_engine": ml_engine,
+                "kraken_integration": kraken_integration,
+                "chat_manager": chat_manager # Pass chat_manager to trading_engine
+            }
+        )
+        logger.info("✅ Industrial Trading Engine initialized")
+
+        # Set trading_engine instance in chat_manager after it's initialized
+        if chat_manager:
+            chat_manager.set_trading_engine(trading_engine)
+
+
+    except Exception as e:
+        logger.error(f"❌ Error during component initialization: {e}", exc_info=True)
+        # Depending on criticality, you might want to exit or disable functionalities
+        raise RuntimeError(f"Failed to start application components: {e}")
+
+    logger.info("🎉 Application startup complete!")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up resources when the app shuts down."""
+    logger.info("🛑 Shutting down application components...")
+    if trading_engine:
+        await trading_engine.stop_trading()
+        logger.info("✅ Trading Engine stopped.")
+    if data_fetcher:
+        data_fetcher.close()
+        logger.info("✅ Data Fetcher closed connections.")
+    logger.info("👋 Application shutdown complete.")
+
+
+# --- HTML Dashboard Routes ---
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    """Serve the main dashboard HTML page."""
+    return templates.TemplateResponse("dashboard.html", {"request": request, "title": "Dashboard"})
+
+@app.get("/chat", response_class=HTMLResponse)
+async def read_chat(request: Request):
+    """Serve the chat interface HTML page."""
+    return templates.TemplateResponse("chat.html", {"request": request, "title": "Chat"})
+
+# --- API Endpoints ---
+@app.get("/api/status")
+async def get_status():
+    """Get the current status of the trading engine."""
+    if trading_engine:
+        status = await trading_engine.get_comprehensive_status()
+        return JSONResponse(content=status)
+    raise HTTPException(status_code=503, detail="Trading engine not initialized")
+
+@app.post("/api/start_trading")
+async def start_trading():
+    """Start the trading engine."""
+    try:
+        if trading_engine:
+            await trading_engine.start_trading()
+            return {"status": "success", "message": "Trading started successfully"}
+        else:
+            return {"status": "error", "message": "Trading engine not available"}
+    except Exception as e:
+        logger.error(f"Error starting trading: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/stop_trading")
+async def stop_trading():
+    """Stop the trading engine."""
+    try:
+        if trading_engine:
+            await trading_engine.stop_trading()
+            return {"status": "success", "message": "Trading stopped successfully"}
+        else:
+            return {"status": "error", "message": "Trading engine not available"}
+    except Exception as e:
+        logger.error(f"Error stopping trading: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/health")
+@app.get("/api/health")
+async def health_check():
+    """Comprehensive health check."""
+    return {
+        "status": "healthy",
+        "components": {
+            "trading_engine": trading_engine is not None,
+            "ml_engine": ml_engine is not None,
+            "data_fetcher": data_fetcher is not None,
+            "notification_manager": notification_manager is not None,
+            "kraken_integration": kraken_integration is not None,
+            "websocket_manager": True, # Manager itself is always 'available'
+            "chat_manager": chat_manager is not None,
+            "gemini_ai": chat_manager.gemini_ai.is_available() if chat_manager and hasattr(chat_manager, 'gemini_ai') else False
+        },
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+# --- WebSocket Endpoint for Chat ---
+@app.websocket("/ws/chat")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            logger.info(f"Received message from WebSocket: {data}")
+            if chat_manager:
+                try:
+                    # Assuming chat_manager.process_user_message is async
+                    response_message = await chat_manager.process_user_message(data)
+                    await manager.send_personal_message(response_message, websocket)
+                except Exception as e:
+                    error_msg = f"Error processing chat message: {e}"
+                    logger.error(error_msg, exc_info=True)
+                    await manager.send_personal_message(f"Error: {error_msg}", websocket)
+            else:
+                await manager.send_personal_message("Chat manager not initialized.", websocket)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        logger.info("WebSocket disconnected.")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}", exc_info=True)
+        manager.disconnect(websocket)
+
+
+# --- Main execution block ---
+if __name__ == "__main__":
+    print("🚀 Starting Industrial Crypto Trading Bot v3.0...")
+    print("=" * 60)
+    print("🌐 Main Dashboard: http://localhost:8000")
+    print("💬 Chat Interface: http://localhost:8000/chat")
+    print("🔧 API Documentation: http://localhost:8000/docs")
+    print("📊 Real-time Data: WebSocket /ws/data") # Placeholder, you might want to add this
+    print("=" * 60)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")

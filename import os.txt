@@ -1,0 +1,3269 @@
+import os
+import sqlite3
+import pandas as pd
+import numpy as np
+import logging
+import tkinter as tk
+from tkinter import ttk, messagebox
+from datetime import datetime, timedelta
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import threading
+import random
+import ctypes
+from pathlib import Path
+import json
+import time
+from collections import deque
+import warnings
+warnings.filterwarnings('ignore')
+
+# Add system path for engine integration
+import sys
+sys.path.append('E:/Trade Chat Bot')
+
+# Engine integration imports
+try:
+    from trade_chat_bot import (
+        get_trading_engine, 
+        get_dashboard_interface, 
+        start_engine, 
+        stop_engine,
+        TradeChatBot,
+        OrderType,
+        AdvancedFeatureEngine,
+        RiskManager
+    )
+    ENGINE_AVAILABLE = True
+    print("✅ Enhanced trading engine detected and loaded!")
+except ImportError as e:
+    ENGINE_AVAILABLE = False
+    print(f"⚠️ Enhanced trading engine not available: {e}")
+    print("📝 Running in standalone mode...")
+
+# Import ML libraries if available
+try:
+    import tensorflow as tf
+    from tensorflow.keras import layers, models, optimizers
+    ML_AVAILABLE = True
+except ImportError:
+    ML_AVAILABLE = False
+    if not ENGINE_AVAILABLE:
+        logging.warning("TensorFlow not available. Using basic Q-learning only.")
+
+try:
+    import talib
+    TALIB_AVAILABLE = True
+except ImportError:
+    TALIB_AVAILABLE = False
+    if not ENGINE_AVAILABLE:
+        logging.warning("TA-Lib not available. Using basic technical indicators.")
+
+# Enable DPI awareness for Windows
+try:
+    ctypes.windll.shcore.SetProcessDpiAwareness(1)
+except Exception as e:
+    logging.error(f"DPI awareness error: {str(e)}")
+
+# Set up logging configuration
+logging.basicConfig(
+    filename='E:/Trade Chat Bot/trade_chat_bot.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+def configure_messagebox():
+    """Configure messagebox to use specific fonts."""
+    root = tk.Tk()
+    root.withdraw()
+    root.option_add('*Dialog.msg.font', 'Arial 22')
+    root.option_add('*Dialog.msg.wrapLength', '800')
+    root.option_add('*Dialog.but.font', 'Arial 22')
+    root.option_add('*Dialog.title.font', 'Arial 22 bold')
+    return root
+
+_msg_root = configure_messagebox()
+
+# Standalone ML classes (fallback when engine not available)
+class StandaloneFeatureEngine:
+    """Simplified feature engineering for standalone mode."""
+    
+    def __init__(self, lookback_period=20):
+        self.lookback_period = lookback_period
+        
+    def calculate_rsi(self, prices, period=14):
+        """Calculate RSI indicator."""
+        delta = np.diff(prices)
+        gain = np.where(delta > 0, delta, 0)
+        loss = np.where(delta < 0, -delta, 0)
+        avg_gain = pd.Series(gain).rolling(period).mean()
+        avg_loss = pd.Series(loss).rolling(period).mean()
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+        return np.concatenate([[50], rsi.fillna(50).values])
+    
+    def engineer_features(self, price_data):
+        """Create basic feature set."""
+        if len(price_data) < self.lookback_period:
+            return None
+            
+        df = pd.DataFrame({'price': price_data}) if isinstance(price_data, list) else price_data.copy()
+        features = pd.DataFrame(index=df.index)
+        prices = df['price'].values
+        
+        # Basic features
+        features['returns'] = df['price'].pct_change()
+        features['volatility'] = features['returns'].rolling(20).std()
+        features['rsi'] = self.calculate_rsi(prices)
+        
+        # Moving averages
+        for period in [5, 10, 20]:
+            features[f'sma_{period}'] = df['price'].rolling(period).mean()
+            features[f'price_to_sma_{period}'] = df['price'] / features[f'sma_{period}']
+        
+        return features.fillna(method='ffill').fillna(0)
+
+class StandaloneQLearningAgent:
+    """Simplified Q-Learning agent for standalone mode."""
+    
+    def __init__(self, state_size=10, action_size=3):
+        self.state_size = state_size
+        self.action_size = action_size
+        self.epsilon = 0.5
+        self.memory = deque(maxlen=1000)
+        self.q_table = {}
+        
+    def state_to_key(self, state):
+        return str(np.round(state, 2).tolist())
+    
+    def act(self, state):
+        if np.random.random() <= self.epsilon:
+            return np.random.randint(self.action_size)
+        state_key = self.state_to_key(state)
+        if state_key not in self.q_table:
+            self.q_table[state_key] = np.zeros(self.action_size)
+        return np.argmax(self.q_table[state_key])
+    
+    def save_q_table(self, filepath="E:/Trade Chat Bot/q_table.json"):
+        try:
+            with open(filepath, 'w') as f:
+                json_q_table = {k: v.tolist() for k, v in self.q_table.items()}
+                json.dump({'q_table': json_q_table, 'epsilon': self.epsilon}, f)
+        except Exception as e:
+            logging.error(f"Error saving Q-table: {e}")
+
+class StandaloneRiskManager:
+    """Simplified risk manager for standalone mode."""
+    
+    def __init__(self, initial_capital=10000):
+        self.current_capital = initial_capital
+        self.max_risk_per_trade = 0.02
+    
+    def calculate_position_size(self, entry_price, stop_loss_price, confidence_score=1.0):
+        risk_amount = self.current_capital * self.max_risk_per_trade
+        if stop_loss_price == 0 or entry_price == stop_loss_price:
+            return risk_amount / entry_price * 0.5
+        price_risk = abs(entry_price - stop_loss_price) / entry_price
+        return (risk_amount * confidence_score) / (price_risk * entry_price)
+
+class DatabaseManager:
+    """Manage database operations for the trading bot."""
+
+    def __init__(self, db_path):
+        self.db_path = db_path
+
+    def get_connection(self):
+        """Return database connection."""
+        logging.info(f"Connecting to database at: {self.db_path}")
+        return sqlite3.connect(self.db_path)
+
+    def initialize_db(self):
+        """Initialize the database schema."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS trades (
+                    id TEXT PRIMARY KEY,
+                    bot_id TEXT,
+                    timestamp TEXT,
+                    type TEXT,
+                    price REAL,
+                    amount REAL,
+                    profit REAL DEFAULT 0,
+                    balance_after REAL,
+                    symbol TEXT,
+                    stop_loss REAL DEFAULT 0,
+                    take_profit REAL DEFAULT 0,
+                    confidence_score REAL DEFAULT 0.5,
+                    ml_prediction REAL DEFAULT 0,
+                    risk_score REAL DEFAULT 0.5
+                )
+            ''')
+            conn.commit()
+            logging.info("Database initialized successfully.")
+
+    def get_trades_by_timeframe(self, start_date: datetime) -> pd.DataFrame:
+        """Fetch trades given a starting date."""
+        with self.get_connection() as conn:
+            query = "SELECT * FROM trades WHERE timestamp >= ?"
+            df = pd.read_sql_query(query, conn, params=(start_date.strftime('%Y-%m-%d %H:%M:%S'),))
+            return df
+
+class TradingBotDashboard:
+    """Enhanced trading bot dashboard with ML capabilities and engine integration."""
+
+    def __init__(self, root):
+        self.root = root
+        
+        # Initialize engine integration FIRST
+        if ENGINE_AVAILABLE:
+            try:
+                self.trading_engine = get_trading_engine()
+                self.dashboard_interface = get_dashboard_interface()
+                self.engine_running = False
+                print("🔗 Connected to trading engine successfully!")
+            except Exception as e:
+                print(f"❌ Failed to connect to trading engine: {e}")
+                self.trading_engine = None
+                self.dashboard_interface = None
+                self.engine_running = False
+        else:
+            self.trading_engine = None
+            self.dashboard_interface = None
+            self.engine_running = False
+        
+        # Dashboard variables
+        self.strategy_var = tk.StringVar(value="Enhanced Q-Learning")
+        self.pair_var = tk.StringVar(value="ETH/USD")
+        self.order_type_var = tk.StringVar(value="Market")
+        self.timeframe_var = tk.StringVar(value="Day")
+        self.auto_trade_var = tk.BooleanVar(value=False)
+        self.profit_threshold = tk.DoubleVar(value=2.0)
+        self.stop_loss_threshold = tk.DoubleVar(value=-1.5)
+        
+        # ML-specific variables
+        self.ml_model_var = tk.StringVar(value="Enhanced Q-Learning")
+        self.confidence_threshold = tk.DoubleVar(value=0.6)
+        self.max_risk_per_trade = tk.DoubleVar(value=2.0)
+        
+        self.selected_trade = None
+        self.stop_auto_trade = threading.Event()
+        self.auto_trade_thread = None
+        
+        # Initialize components based on availability
+        if ENGINE_AVAILABLE and self.trading_engine is not None:
+            self.initialize_engine_components()
+        else:
+            self.initialize_standalone_components()
+        
+        self.setup_window()
+        self.setup_database()
+        self.setup_styles()
+        self.setup_widgets()
+        
+        self.create_directories()
+        self.check_and_generate_price_data()
+        self.update_dashboard()
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def initialize_engine_components(self):
+        """Initialize components when engine is available."""
+        try:
+            # Create some default ML bots
+            self.create_default_ml_bots()
+            
+            # Start the engine
+            start_engine()
+            self.engine_running = True
+            print("🚀 Trading engine started successfully!")
+            
+            # Start periodic updates
+            self.start_engine_sync()
+            
+        except Exception as e:
+            logging.error(f"Failed to initialize engine components: {e}")
+            print(f"❌ Engine initialization failed: {e}")
+
+    def initialize_standalone_components(self):
+        """Initialize fallback components for standalone mode."""
+        # Initialize standalone ML components
+        self.feature_engine = StandaloneFeatureEngine()
+        self.risk_manager = StandaloneRiskManager()
+        self.ml_agent = StandaloneQLearningAgent()
+        self.current_state = None
+        self.previous_state = None
+        self.previous_action = None
+        print("📱 Initialized in standalone mode")
+
+    def create_default_ml_bots(self):
+        """Create default ML-enabled bots."""
+        if not self.dashboard_interface:
+            return
+            
+        default_bots = [
+            ("BTC/USD", "Bitcoin ML Bot"),
+            ("ETH/USD", "Ethereum ML Bot"),
+            ("ADA/USD", "Cardano ML Bot"),
+            ("SOL/USD", "Solana ML Bot")
+        ]
+        
+        for pair, name in default_bots:
+            try:
+                bot_id = self.dashboard_interface.create_ml_bot(name, pair, "Enhanced Q-Learning")
+                self.trading_engine.start_bot(bot_id)
+                logging.info(f"Created ML bot: {name} ({bot_id})")
+                print(f"🤖 Created ML bot: {name}")
+            except Exception as e:
+                logging.error(f"Failed to create bot {name}: {e}")
+
+    def start_engine_sync(self):
+        """Start periodic synchronization with the trading engine."""
+        def sync_loop():
+            while self.engine_running and ENGINE_AVAILABLE:
+                try:
+                    self.update_from_engine()
+                    time.sleep(30)  # Update every 30 seconds
+                except Exception as e:
+                    logging.error(f"Engine sync error: {e}")
+                    time.sleep(60)
+        
+        sync_thread = threading.Thread(target=sync_loop, daemon=True)
+        sync_thread.start()
+
+    def update_from_engine(self):
+        """Update dashboard data from trading engine."""
+        if not self.trading_engine:
+            return
+            
+        try:
+            # Schedule UI update in main thread
+            self.root.after(0, self.update_dashboard)
+            self.root.after(0, self.update_ml_status)
+            
+        except Exception as e:
+            logging.error(f"Error updating from engine: {e}")
+
+    def setup_window(self):
+        """Set up the main application window."""
+        self.root.title("Enhanced Trading Bot Dashboard with ML Integration")
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        window_width = int(screen_width * 0.95)
+        window_height = int(screen_height * 0.95)
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+        self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        self.root.minsize(1800, 1000)
+
+    def setup_styles(self):
+        """Set up ttk styles with custom fonts."""
+        style = ttk.Style()
+        style.configure(".", font=("Montserrat", 18))
+        style.configure("TLabel", font=("Montserrat", 18))
+        style.configure("TButton", font=("Montserrat", 18), padding=(8, 4))
+        style.configure("TCheckbutton", font=("Montserrat", 18))
+        style.configure("TLabelFrame", font=("Montserrat", 18, "bold"))
+        style.configure("TEntry", font=("Montserrat", 18))
+        style.configure("TCombobox", font=("Montserrat", 18))
+        style.configure("Treeview", font=("Montserrat", 16), rowheight=80)
+        style.configure("Treeview.Heading", font=("Montserrat", 18, "bold"))
+
+    def setup_database(self):
+        """Initialize the database manager and create database schema."""
+        db_path = Path("E:/Trade Chat Bot/trade_chat_bot.db").resolve()
+        self.db_manager = DatabaseManager(db_path)
+        self.db_manager.initialize_db()
+
+    def setup_widgets(self):
+        """Set up all GUI widgets with ML enhancements."""
+        # Create notebook for tabbed interface
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        # Main trading tab
+        self.main_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.main_frame, text="Trading Controls")
+        
+        # ML Configuration tab
+        self.ml_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.ml_frame, text="ML Configuration")
+        
+        # Performance tab
+        self.performance_tab = ttk.Frame(self.notebook)
+        self.notebook.add(self.performance_tab, text="Performance Analytics")
+        
+        self.setup_main_tab()
+        self.setup_ml_tab()
+        self.setup_performance_tab()
+
+    def setup_main_tab(self):
+        """Set up the main trading controls tab."""
+        # Trading Controls Frame
+        top_frame = ttk.LabelFrame(self.main_frame, text="Enhanced Trading Controls", padding=15)
+        top_frame.pack(fill="x", padx=5, pady=5)
+
+        # Strategy and pair selection
+        ttk.Label(top_frame, text="Strategy:").grid(row=0, column=0, padx=10, pady=10, sticky="e")
+        strategy_menu = ttk.Combobox(top_frame, textvariable=self.strategy_var, 
+                                      values=["Enhanced Q-Learning", "Deep Q-Network", "DCA", "Grid Trading"], 
+                                      state="readonly", width=20)
+        strategy_menu.grid(row=0, column=1, padx=10, pady=10)
+
+        ttk.Label(top_frame, text="Trading Pair:").grid(row=0, column=2, padx=10, pady=10, sticky="e")
+        pair_menu = ttk.Combobox(top_frame, textvariable=self.pair_var, 
+                                 values=["BTC/USD", "ETH/USD", "ADA/USD", "SOL/USD", "SUI/USD", "SHIB/USD", "XRP/USD"],
+                                 state="readonly", width=15)
+        pair_menu.grid(row=0, column=3, padx=10, pady=10)
+        pair_menu.bind("<<ComboboxSelected>>", lambda event: self.update_ml_status())
+
+        # Risk management parameters
+        ttk.Label(top_frame, text="Max Risk per Trade (%):").grid(row=1, column=0, padx=10, pady=10, sticky="e")
+        ttk.Entry(top_frame, textvariable=self.max_risk_per_trade, width=10).grid(row=1, column=1, padx=10, pady=10)
+
+        ttk.Label(top_frame, text="Confidence Threshold:").grid(row=1, column=2, padx=10, pady=10, sticky="e")
+        ttk.Entry(top_frame, textvariable=self.confidence_threshold, width=10).grid(row=1, column=3, padx=10, pady=10)
+
+        ttk.Label(top_frame, text="Profit Threshold (%):").grid(row=1, column=4, padx=10, pady=10, sticky="e")
+        ttk.Entry(top_frame, textvariable=self.profit_threshold, width=10).grid(row=1, column=5, padx=10, pady=10)
+
+        ttk.Label(top_frame, text="Stop Loss (%):").grid(row=2, column=0, padx=10, pady=10, sticky="e")
+        ttk.Entry(top_frame, textvariable=self.stop_loss_threshold, width=10).grid(row=2, column=1, padx=10, pady=10)
+
+        # Control buttons
+        ttk.Button(top_frame, text="Train ML Model", command=self.train_ml_model).grid(row=2, column=2, padx=10, pady=10)
+        ttk.Button(top_frame, text="Get ML Prediction", command=self.get_ml_prediction).grid(row=2, column=3, padx=10, pady=10)
+
+        # Auto trading and manual controls
+        auto_trade_checkbox = ttk.Checkbutton(top_frame, text="Auto Trading (ML)", variable=self.auto_trade_var,
+                                               command=self.toggle_auto_trade)
+        auto_trade_checkbox.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+
+        ttk.Button(top_frame, text="Execute ML Trade", command=self.execute_ml_trade).grid(row=3, column=2, padx=10, pady=10)
+        ttk.Button(top_frame, text="Exit Selected Trade", command=self.exit_trade).grid(row=3, column=3, padx=10, pady=10)
+        ttk.Button(top_frame, text="Refresh Dashboard", command=self.update_dashboard).grid(row=3, column=4, padx=10, pady=10)
+
+        # ML Status Frame
+        ml_status_frame = ttk.LabelFrame(self.main_frame, text="ML Status & Predictions", padding=10)
+        ml_status_frame.pack(fill="x", padx=5, pady=5)
+
+        self.ml_status_label = ttk.Label(ml_status_frame, text="ML Agent: Initializing...")
+        self.ml_status_label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
+
+        self.prediction_label = ttk.Label(ml_status_frame, text="Current Prediction: None")
+        self.prediction_label.grid(row=0, column=1, padx=10, pady=5, sticky="w")
+
+        self.confidence_label = ttk.Label(ml_status_frame, text="Confidence: N/A")
+        self.confidence_label.grid(row=0, column=2, padx=10, pady=5, sticky="w")
+
+        self.epsilon_label = ttk.Label(ml_status_frame, text="Exploration Rate: N/A")
+        self.epsilon_label.grid(row=1, column=0, padx=10, pady=5, sticky="w")
+
+        self.memory_label = ttk.Label(ml_status_frame, text="Experience Buffer: 0")
+        self.memory_label.grid(row=1, column=1, padx=10, pady=5, sticky="w")
+
+        # Active Trades Frame with enhanced columns
+        trades_frame = ttk.LabelFrame(self.main_frame, text="Active Trades", padding=10)
+        trades_frame.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # Create Treeview for better trade display
+        columns = ('ID', 'Symbol', 'Type', 'Entry Price', 'Amount', 'Current P/L', 'ML Confidence', 'Risk Score', 'Stop Loss', 'Take Profit')
+        self.trades_tree = ttk.Treeview(trades_frame, columns=columns, show='headings', height=10)
+        
+        for col in columns:
+            self.trades_tree.heading(col, text=col)
+            self.trades_tree.column(col, width=120, anchor='center')
+
+        # Scrollbar for trades
+        scrollbar = ttk.Scrollbar(trades_frame, orient="vertical", command=self.trades_tree.yview)
+        self.trades_tree.configure(yscrollcommand=scrollbar.set)
+        
+        self.trades_tree.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Bind selection event
+        self.trades_tree.bind('<<TreeviewSelect>>', self.on_trade_select)
+
+    def setup_ml_tab(self):
+        """Set up the ML configuration tab."""
+        # Model Selection Frame
+        model_frame = ttk.LabelFrame(self.ml_frame, text="ML Model Configuration", padding=15)
+        model_frame.pack(fill="x", padx=10, pady=10)
+
+        ttk.Label(model_frame, text="ML Model:").grid(row=0, column=0, padx=10, pady=10, sticky="e")
+        model_menu = ttk.Combobox(model_frame, textvariable=self.ml_model_var,
+                                  values=["Enhanced Q-Learning", "Deep Q-Network"],
+                                  state="readonly", width=20)
+        model_menu.grid(row=0, column=1, padx=10, pady=10)
+
+        ttk.Button(model_frame, text="Save Model", command=self.save_ml_model).grid(row=0, column=2, padx=10, pady=10)
+        ttk.Button(model_frame, text="Load Model", command=self.load_ml_model).grid(row=0, column=3, padx=10, pady=10)
+
+        # Engine Status Frame
+        engine_frame = ttk.LabelFrame(self.ml_frame, text="Engine Status", padding=15)
+        engine_frame.pack(fill="x", padx=10, pady=10)
+
+        if ENGINE_AVAILABLE:
+            ttk.Label(engine_frame, text="✅ Enhanced Trading Engine: Connected", foreground="green").pack(pady=5)
+            ttk.Label(engine_frame, text="🤖 Advanced ML features available").pack(pady=5)
+        else:
+            ttk.Label(engine_frame, text="⚠️ Enhanced Trading Engine: Not Available", foreground="orange").pack(pady=5)
+            ttk.Label(engine_frame, text="📱 Running in standalone mode").pack(pady=5)
+
+        # Feature Information Frame
+        feature_frame = ttk.LabelFrame(self.ml_frame, text="Available Features", padding=15)
+        feature_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        feature_info = """
+Enhanced Features Available:
+• Advanced Q-Learning with Experience Replay
+• Risk Management with Position Sizing
+• Real-time Market Feature Engineering
+• Confidence-based Trade Execution
+• Continuous Learning from Market Data
+• Performance Monitoring and Analytics
+
+Technical Indicators Used:
+• RSI (Relative Strength Index)
+• MACD (Moving Average Convergence Divergence)
+• Bollinger Bands
+• Moving Averages (5, 10, 20 periods)
+• Momentum Indicators
+• Volatility Measures
+        """
+
+        feature_text = tk.Text(feature_frame, height=15, width=60, font=("Courier", 12))
+        feature_text.insert("1.0", feature_info)
+        feature_text.config(state="disabled")
+        feature_text.pack(pady=10)
+
+    def setup_performance_tab(self):
+        """Set up the performance analytics tab."""
+        # Performance Metrics Frame
+        metrics_frame = ttk.LabelFrame(self.performance_tab, text="Performance Metrics", padding=15)
+        metrics_frame.pack(fill="x", padx=10, pady=10)
+
+        # Create performance labels
+        self.total_trades_label = ttk.Label(metrics_frame, text="Total Trades: 0")
+        self.total_trades_label.grid(row=0, column=0, padx=20, pady=10, sticky="w")
+
+        self.win_rate_label = ttk.Label(metrics_frame, text="Win Rate: 0%")
+        self.win_rate_label.grid(row=0, column=1, padx=20, pady=10, sticky="w")
+
+        self.total_profit_label = ttk.Label(metrics_frame, text="Total Profit: $0.00")
+        self.total_profit_label.grid(row=0, column=2, padx=20, pady=10, sticky="w")
+
+        self.sharpe_ratio_label = ttk.Label(metrics_frame, text="Sharpe Ratio: N/A")
+        self.sharpe_ratio_label.grid(row=1, column=0, padx=20, pady=10, sticky="w")
+
+        self.max_drawdown_label = ttk.Label(metrics_frame, text="Max Drawdown: 0%")
+        self.max_drawdown_label.grid(row=1, column=1, padx=20, pady=10, sticky="w")
+
+        self.current_capital_label = ttk.Label(metrics_frame, text="Current Capital: $10,000")
+        self.current_capital_label.grid(row=1, column=2, padx=20, pady=10, sticky="w")
+
+        # Chart Frame
+        chart_frame = ttk.LabelFrame(self.performance_tab, text="Performance Chart", padding=10)
+        chart_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Create matplotlib figure
+        self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(12, 8))
+        self.canvas = FigureCanvasTkAgg(self.fig, chart_frame)
+        self.canvas.get_tk_widget().pack(fill="both", expand=True)
+
+        ttk.Button(chart_frame, text="Update Chart", command=self.update_performance_chart).pack(pady=5)
+
+    def execute_ml_trade(self):
+        """Execute ML trade using the integrated engine."""
+        if ENGINE_AVAILABLE and self.dashboard_interface:
+            try:
+                pair = self.pair_var.get()
+                
+                # Find a bot for this pair
+                bot_id = None
+                for bid, bot in self.trading_engine.bots.items():
+                    if bot.pair == pair and bot.status.value == "ACTIVE":
+                        bot_id = bid
+                        break
+                
+                if not bot_id:
+                    # Create a new bot for this pair
+                    bot_name = f"Dashboard Bot {pair}"
+                    bot_id = self.dashboard_interface.create_ml_bot(bot_name, pair)
+                    self.trading_engine.start_bot(bot_id)
+                    print(f"🆕 Created new bot for {pair}")
+                
+                # Get ML prediction
+                prediction = self.dashboard_interface.get_ml_prediction(bot_id)
+                
+                if not prediction:
+                    messagebox.showwarning("Warning", "Unable to get ML prediction. Insufficient data.")
+                    return
+                
+                action = prediction['action']
+                confidence = prediction['confidence']
+                current_price = prediction['current_price']
+                
+                # Check confidence threshold
+                if confidence < self.confidence_threshold.get():
+                    messagebox.showinfo("Low Confidence", 
+                                        f"ML prediction confidence ({confidence:.2f}) below threshold ({self.confidence_threshold.get()}).\n"
+                                        "Trade not executed.")
+                    return
+                
+                # Execute the trade
+                if action == "BUY":
+                    success = self.dashboard_interface.execute_manual_trade(bot_id, "BUY")
+                elif action == "SELL":
+                    success = self.dashboard_interface.execute_manual_trade(bot_id, "SELL")
+                else:
+                    messagebox.showinfo("ML Decision", "ML model recommends HOLD. No trade executed.")
+                    return
+                
+                if success:
+                    messagebox.showinfo("Trade Executed", 
+                                        f"🎯 ML Trade Executed Successfully!\n\n"
+                                        f"Action: {action}\n"
+                                        f"Price: ${current_price:.2f}\n"
+                                        f"Confidence: {confidence:.2f}\n"
+                                        f"Pair: {pair}")
+                    self.update_dashboard()
+                else:
+                    messagebox.showerror("Trade Failed", "Failed to execute ML trade.")
+                    
+            except Exception as e:
+                logging.error(f"Error executing ML trade: {e}")
+                messagebox.showerrormessagebox.showerror("Error", f"Failed to execute ML trade: {str(e)}")
+        else:
+            # Fallback to standalone mode
+            try:
+                if not self.ml_agent:
+                    messagebox.showerror("Error", "Please initialize an ML agent first.")
+                    return
+
+                pair = self.pair_var.get()
+                current_price = self.get_current_price(pair)
+                
+                # Get current market features
+                features = self.get_current_features_standalone(pair)
+                if features is None:
+                    messagebox.showerror("Error", "Unable to generate features for current market state.")
+                    return
+
+                # Get ML prediction
+                action = self.ml_agent.act(features)
+                confidence = 0.7  # Default confidence for standalone mode
+                
+                # Check confidence threshold
+                if confidence < self.confidence_threshold.get():
+                    messagebox.showinfo("Low Confidence", 
+                                        f"ML prediction confidence ({confidence:.2f}) below threshold ({self.confidence_threshold.get()}).\n"
+                                        "Trade not executed.")
+                    return
+
+                # Simulate trade execution in standalone mode
+                action_names = ["HOLD", "BUY", "SELL"]
+                if action != 0:  # Not hold
+                    messagebox.showinfo("Standalone Trade", 
+                                        f"🎯 Standalone ML Trade Simulation:\n\n"
+                                        f"Action: {action_names[action]}\n"
+                                        f"Price: ${current_price:.2f}\n"
+                                        f"Confidence: {confidence:.2f}\n"
+                                        f"Pair: {pair}\n\n"
+                                        f"Note: Connect to trading engine for live execution.")
+                else:
+                    messagebox.showinfo("ML Decision", "ML model recommends HOLD. No trade executed.")
+                    
+            except Exception as e:
+                logging.error(f"Error in standalone ML trade: {e}")
+                messagebox.showerror("Error", f"Failed to execute standalone trade: {str(e)}")
+
+    def get_ml_prediction(self):
+        """Get ML prediction using integrated engine."""
+        if ENGINE_AVAILABLE and self.dashboard_interface:
+            try:
+                pair = self.pair_var.get()
+                
+                # Find an active bot for this pair
+                bot_id = None
+                for bid, bot in self.trading_engine.bots.items():
+                    if bot.pair == pair:
+                        bot_id = bid
+                        break
+                
+                if not bot_id:
+                    messagebox.showwarning("Warning", "No active bot found for this pair.")
+                    return
+                
+                prediction = self.dashboard_interface.get_ml_prediction(bot_id)
+                
+                if prediction:
+                    action = prediction['action']
+                    confidence = prediction['confidence']
+                    current_price = prediction['current_price']
+                    
+                    self.prediction_label.config(text=f"Current Prediction: {action}")
+                    self.confidence_label.config(text=f"Confidence: {confidence:.2f}")
+                    
+                    messagebox.showinfo("ML Prediction", 
+                                        f"🔮 ML Prediction for {pair}\n\n"
+                                        f"Action: {action}\n"
+                                        f"Confidence: {confidence:.2f}\n"
+                                        f"Current Price: ${current_price:.2f}\n"
+                                        f"Threshold: {self.confidence_threshold.get()}\n\n"
+                                        f"Recommendation: {'✅ Execute' if confidence >= self.confidence_threshold.get() else '⏳ Wait for higher confidence'}")
+                else:
+                    messagebox.showwarning("Warning", "Unable to get ML prediction.")
+                    
+            except Exception as e:
+                logging.error(f"Error getting ML prediction: {e}")
+                messagebox.showerror("Error", f"Failed to get prediction: {str(e)}")
+        else:
+            # Fallback to standalone mode
+            try:
+                if not self.ml_agent:
+                    messagebox.showerror("Error", "Please initialize an ML agent first.")
+                    return
+
+                pair = self.pair_var.get()
+                features = self.get_current_features_standalone(pair)
+                
+                if features is None:
+                    messagebox.showerror("Error", "Unable to generate features.")
+                    return
+
+                action = self.ml_agent.act(features)
+                confidence = 0.7  # Default confidence
+
+                action_names = ["HOLD", "BUY", "SELL"]
+                prediction_text = action_names[action]
+                
+                self.prediction_label.config(text=f"Current Prediction: {prediction_text}")
+                self.confidence_label.config(text=f"Confidence: {confidence:.2f}")
+
+                current_price = self.get_current_price(pair)
+                messagebox.showinfo("Standalone ML Prediction", 
+                                    f"🔮 Standalone ML Prediction for {pair}:\n\n"
+                                    f"Action: {prediction_text}\n"
+                                    f"Confidence: {confidence:.2f}\n"
+                                    f"Current Price: ${current_price:.2f}\n"
+                                    f"Threshold: {self.confidence_threshold.get()}\n\n"
+                                    f"Note: Connect to trading engine for enhanced predictions.")
+
+            except Exception as e:
+                logging.error(f"Error getting standalone prediction: {e}")
+                messagebox.showerror("Error", f"Failed to get prediction: {str(e)}")
+
+    def train_ml_model(self):
+        """Train ML models using the integrated engine."""
+        if ENGINE_AVAILABLE and self.trading_engine:
+            try:
+                pair = self.pair_var.get()
+                
+                # Find bots for this pair
+                target_bots = [bot for bot in self.trading_engine.bots.values() if bot.pair == pair]
+                
+                if not target_bots:
+                    messagebox.showwarning("Warning", "No bots found for the selected pair.")
+                    return
+                
+                # Create training progress window
+                progress_window = tk.Toplevel(self.root)
+                progress_window.title("Training ML Models")
+                progress_window.geometry("400x200")
+                
+                progress_var = tk.DoubleVar()
+                progress_bar = ttk.Progressbar(progress_window, variable=progress_var, maximum=100)
+                progress_bar.pack(pady=20, padx=20, fill="x")
+                
+                status_label = ttk.Label(progress_window, text="Starting training...")
+                status_label.pack(pady=10)
+                
+                def training_thread():
+                    total_bots = len(target_bots)
+                    
+                    for i, bot in enumerate(target_bots):
+                        if bot.ml_agent and hasattr(bot.ml_agent, 'memory'):
+                            status_label.config(text=f"Training bot {i+1}/{total_bots}: {bot.name}")
+                            
+                            # Train using accumulated experience
+                            for _ in range(100):  # Multiple training iterations
+                                if len(bot.ml_agent.memory) > 32:
+                                    bot.ml_agent.replay()
+                            
+                            # Update progress
+                            progress = ((i + 1) / total_bots) * 100
+                            progress_var.set(progress)
+                            progress_window.update()
+                    
+                    # Save trained models
+                    self.trading_engine.save_ml_models()
+                    
+                    status_label.config(text="Training completed!")
+                    time.sleep(2)
+                    progress_window.destroy()
+                    
+                    # Show results
+                    messagebox.showinfo("Training Complete", 
+                                        f"Training completed for {total_bots} bots!\n"
+                                        f"Models have been saved automatically.")
+                    
+                    self.update_ml_status()
+
+                # Start training in separate thread
+                threading.Thread(target=training_thread, daemon=True).start()
+                
+            except Exception as e:
+                logging.error(f"Error training ML models: {e}")
+                messagebox.showerror("Error", f"Training failed: {str(e)}")
+        else:
+            # Fallback to standalone training
+            messagebox.showinfo("Standalone Training", 
+                                "Standalone ML training simulation.\n"
+                                "Connect to trading engine for live model training.")
+
+    def update_dashboard(self):
+        """Enhanced dashboard update with engine integration."""
+        # Clear existing items
+        for item in self.trades_tree.get_children():
+            self.trades_tree.delete(item)
+
+        try:
+            if ENGINE_AVAILABLE and self.dashboard_interface:
+                # Get trades from integrated engine
+                trades_df = self.dashboard_interface.get_active_trades()
+                active_trades = trades_df[trades_df['profit'] == 0] if not trades_df.empty else pd.DataFrame()
+            else:
+                # Fallback to database query
+                with self.db_manager.get_connection() as conn:
+                    active_trades = pd.read_sql_query("SELECT * FROM trades WHERE profit = 0", conn)
+
+            for _, trade in active_trades.iterrows():
+                try:
+                    if ENGINE_AVAILABLE:
+                        # Get current price from engine
+                        current_price = self.trading_engine.current_prices.get(trade.get('symbol', trade.get('pair', '')), trade['price'])
+                    else:
+                        # Fallback to file-based price lookup
+                        current_price = self.get_current_price(trade.get('symbol', trade.get('pair', 'BTC/USD')))
+                    
+                    profit_loss = self.calculate_trade_profit(
+                        trade['type'], trade['price'], current_price, trade['amount']
+                    )
+                    profit_pct = (profit_loss / (trade['price'] * trade['amount'])) * 100
+
+                    values = (
+                        trade['id'][:8] + "..." if len(trade['id']) > 8 else trade['id'],
+                        trade.get('symbol', trade.get('pair', 'N/A')),
+                        trade['type'],
+                        f"${trade['price']:.2f}",
+                        f"{trade['amount']:.6f}",
+                        f"${profit_loss:.2f} ({profit_pct:+.1f}%)",
+                        f"{trade.get('confidence_score', 0.5):.2f}",
+                        f"{trade.get('risk_score', 0.5):.2f}",
+                        f"${trade.get('stop_loss', 0):.2f}",
+                        f"${trade.get('take_profit', 0):.2f}"
+                    )
+
+                    # Color coding based on profit/loss
+                    tag = "profit" if profit_loss > 0 else "loss" if profit_loss < 0 else "neutral"
+                    self.trades_tree.insert("", "end", values=values, tags=(tag,))
+
+                except Exception as e:
+                    logging.error(f"Error updating trade display: {str(e)}")
+
+            # Configure tags for color coding
+            self.trades_tree.tag_configure("profit", foreground="green")
+            self.trades_tree.tag_configure("loss", foreground="red")
+            self.trades_tree.tag_configure("neutral", foreground="black")
+
+            # Update performance metrics and ML status
+            self.update_performance_metrics()
+            self.update_ml_status()
+
+        except Exception as e:
+            logging.error(f"Error updating dashboard: {str(e)}")
+
+    def update_ml_status(self):
+        """Update ML status with engine integration."""
+        try:
+            if ENGINE_AVAILABLE and self.trading_engine:
+                # Get ML status from active bots
+                pair = self.pair_var.get()
+                target_bot = None
+                
+                for bot in self.trading_engine.bots.values():
+                    if bot.pair == pair and bot.ml_agent:
+                        target_bot = bot
+                        break
+                
+                if target_bot and target_bot.ml_agent:
+                    agent_type = type(target_bot.ml_agent).__name__
+                    self.ml_status_label.config(text=f"ML Agent: {agent_type} (Connected)")
+                    
+                    epsilon = getattr(target_bot.ml_agent, 'epsilon', 'N/A')
+                    if isinstance(epsilon, float):
+                        self.epsilon_label.config(text=f"Exploration Rate: {epsilon:.3f}")
+                    else:
+                        self.epsilon_label.config(text=f"Exploration Rate: {epsilon}")
+                    
+                    memory_size = len(getattr(target_bot.ml_agent, 'memory', []))
+                    self.memory_label.config(text=f"Experience Buffer: {memory_size}")
+                    
+                    # Get latest prediction if available
+                    try:
+                        prediction = self.dashboard_interface.get_ml_prediction(target_bot.id)
+                        if prediction:
+                            self.prediction_label.config(text=f"Current Prediction: {prediction['action']}")
+                            self.confidence_label.config(text=f"Confidence: {prediction['confidence']:.2f}")
+                    except:
+                        pass
+                else:
+                    self.ml_status_label.config(text="ML Agent: No active ML bot for this pair")
+                    self.epsilon_label.config(text="Exploration Rate: N/A")
+                    self.memory_label.config(text="Experience Buffer: 0")
+            else:
+                # Fallback to standalone implementation
+                if hasattr(self, 'ml_agent') and self.ml_agent:
+                    agent_type = type(self.ml_agent).__name__
+                    self.ml_status_label.config(text=f"ML Agent: {agent_type} (Standalone)")
+                    
+                    epsilon = getattr(self.ml_agent, 'epsilon', 'N/A')
+                    self.epsilon_label.config(text=f"Exploration Rate: {epsilon}")
+                    
+                    memory_size = len(getattr(self.ml_agent, 'memory', []))
+                    self.memory_label.config(text=f"Experience Buffer: {memory_size}")
+                else:
+                    self.ml_status_label.config(text="ML Agent: Not Initialized (Standalone)")
+                    
+        except Exception as e:
+            logging.error(f"Error updating ML status: {e}")
+
+    def update_performance_metrics(self):
+        """Update performance metrics with engine integration."""
+        try:
+            if ENGINE_AVAILABLE and self.dashboard_interface:
+                # Get comprehensive performance data from engine
+                all_trades = self.dashboard_interface.get_active_trades()
+                
+                if not all_trades.empty:
+                    total_trades = len(all_trades)
+                    completed_trades = all_trades[all_trades['profit'] != 0]
+                    
+                    if not completed_trades.empty:
+                        winning_trades = len(completed_trades[completed_trades['profit'] > 0])
+                        win_rate = (winning_trades / len(completed_trades)) * 100
+                        total_profit = completed_trades['profit'].sum()
+                        
+                        # Calculate Sharpe ratio (simplified)
+                        if len(completed_trades) > 1:
+                            returns = completed_trades['profit'] / (completed_trades['price'] * completed_trades['amount'])
+                            sharpe_ratio = returns.mean() / returns.std() * np.sqrt(252) if returns.std() > 0 else 0
+                        else:
+                            sharpe_ratio = 0
+                        
+                        # Max drawdown
+                        cumulative_profit = completed_trades['profit'].cumsum()
+                        running_max = cumulative_profit.expanding().max()
+                        drawdown = (cumulative_profit - running_max) / running_max.abs()
+                        max_drawdown = drawdown.min() * 100 if not drawdown.empty else 0
+                    else:
+                        winning_trades = 0
+                        win_rate = 0
+                        total_profit = 0
+                        sharpe_ratio = 0
+                        max_drawdown = 0
+                    
+                    # Get current capital from engine
+                    total_balance = sum(bot.balance for bot in self.trading_engine.bots.values())
+                else:
+                    total_trades = 0
+                    win_rate = 0
+                    total_profit = 0
+                    sharpe_ratio = 0
+                    max_drawdown = 0
+                    total_balance = 0
+            else:
+                # Fallback to database-based calculation
+                with self.db_manager.get_connection() as conn:
+                    all_trades = pd.read_sql_query("SELECT * FROM trades", conn)
+                    
+                if not all_trades.empty:
+                    total_trades = len(all_trades)
+                    completed_trades = all_trades[all_trades['profit'] != 0]
+                    
+                    if not completed_trades.empty:
+                        winning_trades = len(completed_trades[completed_trades['profit'] > 0])
+                        win_rate = (winning_trades / len(completed_trades)) * 100
+                        total_profit = completed_trades['profit'].sum()
+                        sharpe_ratio = 0  # Simplified
+                        max_drawdown = 0  # Simplified
+                    else:
+                        winning_trades = 0
+                        win_rate = 0
+                        total_profit = 0
+                        sharpe_ratio = 0
+                        max_drawdown = 0
+                    
+                    total_balance = getattr(self, 'risk_manager', type('obj', (object,), {'current_capital': 10000})()).current_capital
+                else:
+                    total_trades = 0
+                    win_rate = 0
+                    total_profit = 0
+                    sharpe_ratio = 0
+                    max_drawdown = 0
+                    total_balance = 10000
+
+            # Update labels
+            self.total_trades_label.config(text=f"Total Trades: {total_trades}")
+            self.win_rate_label.config(text=f"Win Rate: {win_rate:.1f}%")
+            self.total_profit_label.config(text=f"Total Profit: ${total_profit:.2f}")
+            self.sharpe_ratio_label.config(text=f"Sharpe Ratio: {sharpe_ratio:.2f}")
+            self.max_drawdown_label.config(text=f"Max Drawdown: {max_drawdown:.1f}%")
+            self.current_capital_label.config(text=f"Current Capital: ${total_balance:.2f}")
+
+        except Exception as e:
+            logging.error(f"Error updating performance metrics: {e}")
+
+    def update_performance_chart(self):
+        """Update the performance analytics chart."""
+        try:
+            # Clear previous plots
+            self.ax1.clear()
+            self.ax2.clear()
+
+            # Get trade data
+            with self.db_manager.get_connection() as conn:
+                trades_df = pd.read_sql_query("SELECT * FROM trades ORDER BY timestamp", conn)
+
+            if trades_df.empty:
+                self.ax1.text(0.5, 0.5, 'No trades available', ha='center', va='center', transform=self.ax1.transAxes)
+                self.ax2.text(0.5, 0.5, 'No performance data', ha='center', va='center', transform=self.ax2.transAxes)
+                self.canvas.draw()
+                return
+
+            # Calculate cumulative P&L
+            trades_df['timestamp'] = pd.to_datetime(trades_df['timestamp'])
+            trades_df['cumulative_profit'] = trades_df['profit'].cumsum()
+
+            # Plot 1: Cumulative P&L over time
+            self.ax1.plot(trades_df['timestamp'], trades_df['cumulative_profit'], 'b-', linewidth=2)
+            self.ax1.set_title('Cumulative Profit/Loss Over Time')
+            self.ax1.set_xlabel('Date')
+            self.ax1.set_ylabel('Cumulative P&L ($)')
+            self.ax1.grid(True, alpha=0.3)
+
+            # Plot 2: Trade performance distribution
+            completed_trades = trades_df[trades_df['profit'] != 0]
+            if not completed_trades.empty:
+                profits = completed_trades['profit']
+                self.ax2.hist(profits, bins=20, alpha=0.7, color='green' if profits.mean() > 0 else 'red')
+                self.ax2.axvline(profits.mean(), color='black', linestyle='--', label=f'Mean: ${profits.mean():.2f}')
+                self.ax2.set_title('Trade Profit/Loss Distribution')
+                self.ax2.set_xlabel('Profit/Loss ($)')
+                self.ax2.set_ylabel('Frequency')
+                self.ax2.legend()
+                self.ax2.grid(True, alpha=0.3)
+
+            plt.tight_layout()
+            self.canvas.draw()
+
+        except Exception as e:
+            logging.error(f"Error updating performance chart: {str(e)}")
+
+    def on_trade_select(self, event):
+        """Handle trade selection in the tree view."""
+        selection = self.trades_tree.selection()
+        if selection:
+            item = self.trades_tree.item(selection[0])
+            trade_id = item['values'][0]
+            
+            # Find the selected trade
+            with self.db_manager.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM trades WHERE id LIKE ?", (f"{trade_id}%",))
+                trade = cursor.fetchone()
+                
+            if trade:
+                self.selected_trade = {
+                    'id': trade[0],
+                    'symbol': trade[8] if len(trade) > 8 else 'BTC/USD',
+                    'type': trade[3],
+                    'price': trade[4],
+                    'amount': trade[5]
+                }
+
+    def toggle_auto_trade(self):
+        """Enhanced auto trading with engine integration."""
+        if self.auto_trade_var.get():
+            if ENGINE_AVAILABLE and self.trading_engine:
+                # Use engine's built-in auto trading
+                pair = self.pair_var.get()
+                
+                # Find or create bot for this pair
+                target_bot = None
+                for bot in self.trading_engine.bots.values():
+                    if bot.pair == pair:
+                        target_bot = bot
+                        break
+                
+                if not target_bot:
+                    # Create new bot
+                    bot_name = f"Auto Trading Bot {pair}"
+                    bot_id = self.dashboard_interface.create_ml_bot(bot_name, pair)
+                    self.trading_engine.start_bot(bot_id)
+                    target_bot = self.trading_engine.bots[bot_id]
+                
+                if target_bot.ml_agent is None:
+                    messagebox.showerror("Error", "ML agent not available for auto trading.")
+                    self.auto_trade_var.set(False)
+                    return
+                
+                # Activate the bot for auto trading
+                from trade_chat_bot import BotStatus
+                target_bot.status = BotStatus.ACTIVE
+                
+                logging.info(f"Auto trading enabled for {target_bot.name}")
+                messagebox.showinfo("Auto Trading", f"✅ Auto trading enabled for {target_bot.name}")
+            else:
+                # Fallback message for standalone mode
+                messagebox.showinfo("Standalone Mode", 
+                                    "Auto trading simulation enabled.\n"
+                                    "Connect to trading engine for live auto trading.")
+                logging.info("Auto trading simulation enabled (standalone mode).")
+        else:
+            if ENGINE_AVAILABLE and self.trading_engine:
+                # Pause bots for this pair
+                pair = self.pair_var.get()
+                for bot in self.trading_engine.bots.values():
+                    if bot.pair == pair:
+                        from trade_chat_bot import BotStatus
+                        bot.status = BotStatus.PAUSED
+                
+                logging.info("Auto trading disabled.")
+                messagebox.showinfo("Auto Trading", "Auto trading disabled.")
+            else:
+                logging.info("Auto trading simulation disabled.")
+
+    def save_ml_model(self):
+        """Save ML models with engine integration."""
+        try:
+            if ENGINE_AVAILABLE and self.trading_engine:
+                self.trading_engine.save_ml_models()
+                messagebox.showinfo("Success", "✅ All ML models saved successfully!")
+            else:
+                # Fallback to standalone implementation
+                if hasattr(self, 'ml_agent') and self.ml_agent:
+                    self.ml_agent.save_q_table()
+                    messagebox.showinfo("Success", "✅ Standalone ML model saved successfully!")
+                else:
+                    messagebox.showerror("Error", "No ML model to save.")
+                    
+        except Exception as e:
+            logging.error(f"Error saving ML models: {e}")
+            messagebox.showerror("Error", f"Failed to save models: {str(e)}")
+
+    def load_ml_model(self):
+        """Load ML models with engine integration."""
+        try:
+            if ENGINE_AVAILABLE and self.trading_engine:
+                self.trading_engine.load_ml_models()
+                self.update_ml_status()
+                messagebox.showinfo("Success", "✅ All ML models loaded successfully!")
+            else:
+                # Fallback to standalone implementation
+                if hasattr(self, 'ml_agent') and self.ml_agent:
+                    self.ml_agent.load_q_table()
+                    self.update_ml_status()
+                    messagebox.showinfo("Success", "✅ Standalone ML model loaded successfully!")
+                else:
+                    messagebox.showerror("Error", "Please initialize an ML agent first.")
+                    
+        except Exception as e:
+            logging.error(f"Error loading ML models: {e}")
+            messagebox.showerror("Error", f"Failed to load models: {str(e)}")
+
+    def exit_trade(self):
+        """Enhanced trade exit with engine integration."""
+        if not self.selected_trade:
+            messagebox.showwarning("Warning", "Please select a trade to exit.")
+            return
+
+        try:
+            if ENGINE_AVAILABLE and self.dashboard_interface:
+                # Find the bot that owns this trade
+                trade_symbol = self.selected_trade.get('symbol', self.selected_trade.get('pair', ''))
+                
+                target_bot = None
+                for bot in self.trading_engine.bots.values():
+                    if bot.pair == trade_symbol and bot.position:
+                        target_bot = bot
+                        break
+                
+                if target_bot:
+                    # Get current price
+                    current_price = self.trading_engine.current_prices.get(target_bot.pair)
+                    if current_price:
+                        # Execute sell through engine
+                        from trade_chat_bot import OrderType
+                        success = self.trading_engine.execute_trade(
+                            target_bot, OrderType.SELL, target_bot.position.amount, current_price
+                        )
+                        
+                        if success:
+                            profit = (current_price - target_bot.position.entry_price) * target_bot.position.amount if target_bot.position else 0
+                            messagebox.showinfo("Trade Exited", 
+                                                f"✅ Trade exited successfully!\n\n"
+                                                f"Exit Price: ${current_price:.2f}\n"
+                                                f"Profit/Loss: ${profit:.2f}")
+                            self.update_dashboard()
+                            self.selected_trade = None
+                        else:
+                            messagebox.showerror("Error", "Failed to exit trade through engine.")
+                    else:
+                        messagebox.showerror("Error", "Unable to get current price.")
+                else:
+                    messagebox.showwarning("Warning", "No active position found for this trade.")
+            else:
+                # Fallback to standalone simulation
+                trade_id = self.selected_trade['id']
+                symbol = self.selected_trade['symbol']
+                entry_price = self.selected_trade['price']
+                amount = self.selected_trade['amount']
+
+                current_price = self.get_current_price(symbol)
+                profit = self.calculate_trade_profit(self.selected_trade['type'], entry_price, current_price, amount)
+
+                messagebox.showinfo("Standalone Trade Exit", 
+                                    f"📝 Trade exit simulation:\n\n"
+                                    f"Entry Price: ${entry_price:.2f}\n"
+                                    f"Exit Price: ${current_price:.2f}\n"
+                                    f"Profit/Loss: ${profit:.2f}\n\n"
+                                    f"Note: Connect to trading engine for live execution.")
+
+                self.selected_trade = None
+                
+        except Exception as e:
+            logging.error(f"Error exiting trade: {e}")
+            messagebox.showerror("Error", f"Failed to exit trade: {str(e)}")
+
+    def get_current_features_standalone(self, pair):
+        """Get current market features for standalone mode."""
+        try:
+            symbol = pair.split('/')[0].lower()
+            price_file = os.path.join("E:/Trade Chat Bot/backups", f"historical_prices_{symbol}.csv")
+            
+            if not os.path.exists(price_file):
+                return None
+
+            df = pd.read_csv(price_file)
+            if len(df) < 20:
+                return None
+                
+            # Use last 50 prices for feature generation
+            recent_prices = df['price'].tail(50).values
+            features_df = self.feature_engine.engineer_features(recent_prices)
+            
+            if features_df is not None and len(features_df) > 0:
+                features = features_df.iloc[-1].values
+                features = np.nan_to_num(features)
+                features = np.clip(features, -10, 10)
+                
+                if np.max(np.abs(features)) > 0:
+                    features = features / (np.max(np.abs(features)) + 1e-8)
+                    
+                return features
+                
+        except Exception as e:
+            logging.error(f"Error getting standalone features: {e}")
+            
+        return None
+
+    def calculate_trade_profit(self, trade_type, entry_price, exit_price, amount):
+        """Calculate profit for a completed trade."""
+        if trade_type == "BUY":
+            return (exit_price - entry_price) * amount
+        elif trade_type == "SELL":
+            return (entry_price - exit_price) * amount
+        return 0
+
+    def generate_trade_id(self):
+        """Generate unique trade ID."""
+        return f"ML_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{random.randint(1000, 9999)}"
+
+    def create_directories(self):
+        """Create necessary directories if they don't exist."""
+        directories = [
+            "E:/Trade Chat Bot",
+            "E:/Trade Chat Bot/backups",
+            "E:/Trade Chat Bot/models"
+        ]
+        for directory in directories:
+            if not os.path.exists(directory):
+                try:
+                    os.makedirs(directory)
+                    logging.info(f"Created directory: {directory}")
+                except Exception as e:
+                    logging.error(f"Failed to create directory {directory}: {str(e)}")
+
+    def check_and_generate_price_data(self):
+        """Check if price data exists and generate if missing."""
+        missing_files = []
+        pairs = ["BTC/USD", "ETH/USD", "ADA/USD", "SOL/USD", "SUI/USD", "SHIB/USD", "XRP/USD"]
+        base_prices = {
+            'btc': 104000,
+            'eth': 2500,
+            'ada': 0.67,
+            'sol': 154,
+            'sui': 3.24,
+            'shib': 0.00001,import os
+import sqlite3
+import pandas as pd
+import numpy as np
+import logging
+import tkinter as tk
+from tkinter import ttk, messagebox
+from datetime import datetime, timedelta
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import threading
+import random
+import ctypes
+from pathlib import Path
+import json
+import time
+from collections import deque
+import warnings
+warnings.filterwarnings('ignore')
+
+# Add system path for engine integration
+import sys
+sys.path.append('E:/Trade Chat Bot')
+
+# Engine integration imports
+try:
+    from trade_chat_bot import (
+        get_trading_engine, 
+        get_dashboard_interface, 
+        start_engine, 
+        stop_engine,
+        TradeChatBot,
+        OrderType,
+        AdvancedFeatureEngine,
+        RiskManager
+    )
+    ENGINE_AVAILABLE = True
+    print("✅ Enhanced trading engine detected and loaded!")
+except ImportError as e:
+    ENGINE_AVAILABLE = False
+    print(f"⚠️ Enhanced trading engine not available: {e}")
+    print("📝 Running in standalone mode...")
+
+# Import ML libraries if available
+try:
+    import tensorflow as tf
+    from tensorflow.keras import layers, models, optimizers
+    ML_AVAILABLE = True
+except ImportError:
+    ML_AVAILABLE = False
+    if not ENGINE_AVAILABLE:
+        logging.warning("TensorFlow not available. Using basic Q-learning only.")
+
+try:
+    import talib
+    TALIB_AVAILABLE = True
+except ImportError:
+    TALIB_AVAILABLE = False
+    if not ENGINE_AVAILABLE:
+        logging.warning("TA-Lib not available. Using basic technical indicators.")
+
+# Enable DPI awareness for Windows
+try:
+    ctypes.windll.shcore.SetProcessDpiAwareness(1)
+except Exception as e:
+    logging.error(f"DPI awareness error: {str(e)}")
+
+# Set up logging configuration
+logging.basicConfig(
+    filename='E:/Trade Chat Bot/trade_chat_bot.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+def configure_messagebox():
+    """Configure messagebox to use specific fonts."""
+    root = tk.Tk()
+    root.withdraw()
+    root.option_add('*Dialog.msg.font', 'Arial 22')
+    root.option_add('*Dialog.msg.wrapLength', '800')
+    root.option_add('*Dialog.but.font', 'Arial 22')
+    root.option_add('*Dialog.title.font', 'Arial 22 bold')
+    return root
+
+_msg_root = configure_messagebox()
+
+# Standalone ML classes (fallback when engine not available)
+class StandaloneFeatureEngine:
+    """Simplified feature engineering for standalone mode."""
+    
+    def __init__(self, lookback_period=20):
+        self.lookback_period = lookback_period
+        
+    def calculate_rsi(self, prices, period=14):
+        """Calculate RSI indicator."""
+        delta = np.diff(prices)
+        gain = np.where(delta > 0, delta, 0)
+        loss = np.where(delta < 0, -delta, 0)
+        avg_gain = pd.Series(gain).rolling(period).mean()
+        avg_loss = pd.Series(loss).rolling(period).mean()
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+        return np.concatenate([[50], rsi.fillna(50).values])
+    
+    def engineer_features(self, price_data):
+        """Create basic feature set."""
+        if len(price_data) < self.lookback_period:
+            return None
+            
+        df = pd.DataFrame({'price': price_data}) if isinstance(price_data, list) else price_data.copy()
+        features = pd.DataFrame(index=df.index)
+        prices = df['price'].values
+        
+        # Basic features
+        features['returns'] = df['price'].pct_change()
+        features['volatility'] = features['returns'].rolling(20).std()
+        features['rsi'] = self.calculate_rsi(prices)
+        
+        # Moving averages
+        for period in [5, 10, 20]:
+            features[f'sma_{period}'] = df['price'].rolling(period).mean()
+            features[f'price_to_sma_{period}'] = df['price'] / features[f'sma_{period}']
+        
+        return features.fillna(method='ffill').fillna(0)
+
+class StandaloneQLearningAgent:
+    """Simplified Q-Learning agent for standalone mode."""
+    
+    def __init__(self, state_size=10, action_size=3):
+        self.state_size = state_size
+        self.action_size = action_size
+        self.epsilon = 0.5
+        self.memory = deque(maxlen=1000)
+        self.q_table = {}
+        
+    def state_to_key(self, state):
+        return str(np.round(state, 2).tolist())
+    
+    def act(self, state):
+        if np.random.random() <= self.epsilon:
+            return np.random.randint(self.action_size)
+        state_key = self.state_to_key(state)
+        if state_key not in self.q_table:
+            self.q_table[state_key] = np.zeros(self.action_size)
+        return np.argmax(self.q_table[state_key])
+    
+    def save_q_table(self, filepath="E:/Trade Chat Bot/q_table.json"):
+        try:
+            with open(filepath, 'w') as f:
+                json_q_table = {k: v.tolist() for k, v in self.q_table.items()}
+                json.dump({'q_table': json_q_table, 'epsilon': self.epsilon}, f)
+        except Exception as e:
+            logging.error(f"Error saving Q-table: {e}")
+
+class StandaloneRiskManager:
+    """Simplified risk manager for standalone mode."""
+    
+    def __init__(self, initial_capital=10000):
+        self.current_capital = initial_capital
+        self.max_risk_per_trade = 0.02
+    
+    def calculate_position_size(self, entry_price, stop_loss_price, confidence_score=1.0):
+        risk_amount = self.current_capital * self.max_risk_per_trade
+        if stop_loss_price == 0 or entry_price == stop_loss_price:
+            return risk_amount / entry_price * 0.5
+        price_risk = abs(entry_price - stop_loss_price) / entry_price
+        return (risk_amount * confidence_score) / (price_risk * entry_price)
+
+class DatabaseManager:
+    """Manage database operations for the trading bot."""
+
+    def __init__(self, db_path):
+        self.db_path = db_path
+
+    def get_connection(self):
+        """Return database connection."""
+        logging.info(f"Connecting to database at: {self.db_path}")
+        return sqlite3.connect(self.db_path)
+
+    def initialize_db(self):
+        """Initialize the database schema."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS trades (
+                    id TEXT PRIMARY KEY,
+                    bot_id TEXT,
+                    timestamp TEXT,
+                    type TEXT,
+                    price REAL,
+                    amount REAL,
+                    profit REAL DEFAULT 0,
+                    balance_after REAL,
+                    symbol TEXT,
+                    stop_loss REAL DEFAULT 0,
+                    take_profit REAL DEFAULT 0,
+                    confidence_score REAL DEFAULT 0.5,
+                    ml_prediction REAL DEFAULT 0,
+                    risk_score REAL DEFAULT 0.5
+                )
+            ''')
+            conn.commit()
+            logging.info("Database initialized successfully.")
+
+    def get_trades_by_timeframe(self, start_date: datetime) -> pd.DataFrame:
+        """Fetch trades given a starting date."""
+        with self.get_connection() as conn:
+            query = "SELECT * FROM trades WHERE timestamp >= ?"
+            df = pd.read_sql_query(query, conn, params=(start_date.strftime('%Y-%m-%d %H:%M:%S'),))
+            return df
+
+class TradingBotDashboard:
+    """Enhanced trading bot dashboard with ML capabilities and engine integration."""
+
+    def __init__(self, root):
+        self.root = root
+        
+        # Initialize engine integration FIRST
+        if ENGINE_AVAILABLE:
+            try:
+                self.trading_engine = get_trading_engine()
+                self.dashboard_interface = get_dashboard_interface()
+                self.engine_running = False
+                print("🔗 Connected to trading engine successfully!")
+            except Exception as e:
+                print(f"❌ Failed to connect to trading engine: {e}")
+                self.trading_engine = None
+                self.dashboard_interface = None
+                self.engine_running = False
+        else:
+            self.trading_engine = None
+            self.dashboard_interface = None
+            self.engine_running = False
+        
+        # Dashboard variables
+        self.strategy_var = tk.StringVar(value="Enhanced Q-Learning")
+        self.pair_var = tk.StringVar(value="ETH/USD")
+        self.order_type_var = tk.StringVar(value="Market")
+        self.timeframe_var = tk.StringVar(value="Day")
+        self.auto_trade_var = tk.BooleanVar(value=False)
+        self.profit_threshold = tk.DoubleVar(value=2.0)
+        self.stop_loss_threshold = tk.DoubleVar(value=-1.5)
+        
+        # ML-specific variables
+        self.ml_model_var = tk.StringVar(value="Enhanced Q-Learning")
+        self.confidence_threshold = tk.DoubleVar(value=0.6)
+        self.max_risk_per_trade = tk.DoubleVar(value=2.0)
+        
+        self.selected_trade = None
+        self.stop_auto_trade = threading.Event()
+        self.auto_trade_thread = None
+        
+        # Initialize components based on availability
+        if ENGINE_AVAILABLE and self.trading_engine is not None:
+            self.initialize_engine_components()
+        else:
+            self.initialize_standalone_components()
+        
+        self.setup_window()
+        self.setup_database()
+        self.setup_styles()
+        self.setup_widgets()
+        
+        self.create_directories()
+        self.check_and_generate_price_data()
+        self.update_dashboard()
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def initialize_engine_components(self):
+        """Initialize components when engine is available."""
+        try:
+            # Create some default ML bots
+            self.create_default_ml_bots()
+            
+            # Start the engine
+            start_engine()
+            self.engine_running = True
+            print("🚀 Trading engine started successfully!")
+            
+            # Start periodic updates
+            self.start_engine_sync()
+            
+        except Exception as e:
+            logging.error(f"Failed to initialize engine components: {e}")
+            print(f"❌ Engine initialization failed: {e}")
+
+    def initialize_standalone_components(self):
+        """Initialize fallback components for standalone mode."""
+        # Initialize standalone ML components
+        self.feature_engine = StandaloneFeatureEngine()
+        self.risk_manager = StandaloneRiskManager()
+        self.ml_agent = StandaloneQLearningAgent()
+        self.current_state = None
+        self.previous_state = None
+        self.previous_action = None
+        print("📱 Initialized in standalone mode")
+
+    def create_default_ml_bots(self):
+        """Create default ML-enabled bots."""
+        if not self.dashboard_interface:
+            return
+            
+        default_bots = [
+            ("BTC/USD", "Bitcoin ML Bot"),
+            ("ETH/USD", "Ethereum ML Bot"),
+            ("ADA/USD", "Cardano ML Bot"),
+            ("SOL/USD", "Solana ML Bot")
+        ]
+        
+        for pair, name in default_bots:
+            try:
+                bot_id = self.dashboard_interface.create_ml_bot(name, pair, "Enhanced Q-Learning")
+                self.trading_engine.start_bot(bot_id)
+                logging.info(f"Created ML bot: {name} ({bot_id})")
+                print(f"🤖 Created ML bot: {name}")
+            except Exception as e:
+                logging.error(f"Failed to create bot {name}: {e}")
+
+    def start_engine_sync(self):
+        """Start periodic synchronization with the trading engine."""
+        def sync_loop():
+            while self.engine_running and ENGINE_AVAILABLE:
+                try:
+                    self.update_from_engine()
+                    time.sleep(30)  # Update every 30 seconds
+                except Exception as e:
+                    logging.error(f"Engine sync error: {e}")
+                    time.sleep(60)
+        
+        sync_thread = threading.Thread(target=sync_loop, daemon=True)
+        sync_thread.start()
+
+    def update_from_engine(self):
+        """Update dashboard data from trading engine."""
+        if not self.trading_engine:
+            return
+            
+        try:
+            # Schedule UI update in main thread
+            self.root.after(0, self.update_dashboard)
+            self.root.after(0, self.update_ml_status)
+            
+        except Exception as e:
+            logging.error(f"Error updating from engine: {e}")
+
+    def setup_window(self):
+        """Set up the main application window."""
+        self.root.title("Enhanced Trading Bot Dashboard with ML Integration")
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        window_width = int(screen_width * 0.95)
+        window_height = int(screen_height * 0.95)
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+        self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        self.root.minsize(1800, 1000)
+
+    def setup_styles(self):
+        """Set up ttk styles with custom fonts."""
+        style = ttk.Style()
+        style.configure(".", font=("Montserrat", 18))
+        style.configure("TLabel", font=("Montserrat", 18))
+        style.configure("TButton", font=("Montserrat", 18), padding=(8, 4))
+        style.configure("TCheckbutton", font=("Montserrat", 18))
+        style.configure("TLabelFrame", font=("Montserrat", 18, "bold"))
+        style.configure("TEntry", font=("Montserrat", 18))
+        style.configure("TCombobox", font=("Montserrat", 18))
+        style.configure("Treeview", font=("Montserrat", 16), rowheight=80)
+        style.configure("Treeview.Heading", font=("Montserrat", 18, "bold"))
+
+    def setup_database(self):
+        """Initialize the database manager and create database schema."""
+        db_path = Path("E:/Trade Chat Bot/trade_chat_bot.db").resolve()
+        self.db_manager = DatabaseManager(db_path)
+        self.db_manager.initialize_db()
+
+    def setup_widgets(self):
+        """Set up all GUI widgets with ML enhancements."""
+        # Create notebook for tabbed interface
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        # Main trading tab
+        self.main_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.main_frame, text="Trading Controls")
+        
+        # ML Configuration tab
+        self.ml_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.ml_frame, text="ML Configuration")
+        
+        # Performance tab
+        self.performance_tab = ttk.Frame(self.notebook)
+        self.notebook.add(self.performance_tab, text="Performance Analytics")
+        
+        self.setup_main_tab()
+        self.setup_ml_tab()
+        self.setup_performance_tab()
+
+    def setup_main_tab(self):
+        """Set up the main trading controls tab."""
+        # Trading Controls Frame
+        top_frame = ttk.LabelFrame(self.main_frame, text="Enhanced Trading Controls", padding=15)
+        top_frame.pack(fill="x", padx=5, pady=5)
+
+        # Strategy and pair selection
+        ttk.Label(top_frame, text="Strategy:").grid(row=0, column=0, padx=10, pady=10, sticky="e")
+        strategy_menu = ttk.Combobox(top_frame, textvariable=self.strategy_var, 
+                                      values=["Enhanced Q-Learning", "Deep Q-Network", "DCA", "Grid Trading"], 
+                                      state="readonly", width=20)
+        strategy_menu.grid(row=0, column=1, padx=10, pady=10)
+
+        ttk.Label(top_frame, text="Trading Pair:").grid(row=0, column=2, padx=10, pady=10, sticky="e")
+        pair_menu = ttk.Combobox(top_frame, textvariable=self.pair_var, 
+                                 values=["BTC/USD", "ETH/USD", "ADA/USD", "SOL/USD", "SUI/USD", "SHIB/USD", "XRP/USD"],
+                                 state="readonly", width=15)
+        pair_menu.grid(row=0, column=3, padx=10, pady=10)
+        pair_menu.bind("<<ComboboxSelected>>", lambda event: self.update_ml_status())
+
+        # Risk management parameters
+        ttk.Label(top_frame, text="Max Risk per Trade (%):").grid(row=1, column=0, padx=10, pady=10, sticky="e")
+        ttk.Entry(top_frame, textvariable=self.max_risk_per_trade, width=10).grid(row=1, column=1, padx=10, pady=10)
+
+        ttk.Label(top_frame, text="Confidence Threshold:").grid(row=1, column=2, padx=10, pady=10, sticky="e")
+        ttk.Entry(top_frame, textvariable=self.confidence_threshold, width=10).grid(row=1, column=3, padx=10, pady=10)
+
+        ttk.Label(top_frame, text="Profit Threshold (%):").grid(row=1, column=4, padx=10, pady=10, sticky="e")
+        ttk.Entry(top_frame, textvariable=self.profit_threshold, width=10).grid(row=1, column=5, padx=10, pady=10)
+
+        ttk.Label(top_frame, text="Stop Loss (%):").grid(row=2, column=0, padx=10, pady=10, sticky="e")
+        ttk.Entry(top_frame, textvariable=self.stop_loss_threshold, width=10).grid(row=2, column=1, padx=10, pady=10)
+
+        # Control buttons
+        ttk.Button(top_frame, text="Train ML Model", command=self.train_ml_model).grid(row=2, column=2, padx=10, pady=10)
+        ttk.Button(top_frame, text="Get ML Prediction", command=self.get_ml_prediction).grid(row=2, column=3, padx=10, pady=10)
+
+        # Auto trading and manual controls
+        auto_trade_checkbox = ttk.Checkbutton(top_frame, text="Auto Trading (ML)", variable=self.auto_trade_var,
+                                               command=self.toggle_auto_trade)
+        auto_trade_checkbox.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+
+        ttk.Button(top_frame, text="Execute ML Trade", command=self.execute_ml_trade).grid(row=3, column=2, padx=10, pady=10)
+        ttk.Button(top_frame, text="Exit Selected Trade", command=self.exit_trade).grid(row=3, column=3, padx=10, pady=10)
+        ttk.Button(top_frame, text="Refresh Dashboard", command=self.update_dashboard).grid(row=3, column=4, padx=10, pady=10)
+
+        # ML Status Frame
+        ml_status_frame = ttk.LabelFrame(self.main_frame, text="ML Status & Predictions", padding=10)
+        ml_status_frame.pack(fill="x", padx=5, pady=5)
+
+        self.ml_status_label = ttk.Label(ml_status_frame, text="ML Agent: Initializing...")
+        self.ml_status_label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
+
+        self.prediction_label = ttk.Label(ml_status_frame, text="Current Prediction: None")
+        self.prediction_label.grid(row=0, column=1, padx=10, pady=5, sticky="w")
+
+        self.confidence_label = ttk.Label(ml_status_frame, text="Confidence: N/A")
+        self.confidence_label.grid(row=0, column=2, padx=10, pady=5, sticky="w")
+
+        self.epsilon_label = ttk.Label(ml_status_frame, text="Exploration Rate: N/A")
+        self.epsilon_label.grid(row=1, column=0, padx=10, pady=5, sticky="w")
+
+        self.memory_label = ttk.Label(ml_status_frame, text="Experience Buffer: 0")
+        self.memory_label.grid(row=1, column=1, padx=10, pady=5, sticky="w")
+
+        # Active Trades Frame with enhanced columns
+        trades_frame = ttk.LabelFrame(self.main_frame, text="Active Trades", padding=10)
+        trades_frame.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # Create Treeview for better trade display
+        columns = ('ID', 'Symbol', 'Type', 'Entry Price', 'Amount', 'Current P/L', 'ML Confidence', 'Risk Score', 'Stop Loss', 'Take Profit')
+        self.trades_tree = ttk.Treeview(trades_frame, columns=columns, show='headings', height=10)
+        
+        for col in columns:
+            self.trades_tree.heading(col, text=col)
+            self.trades_tree.column(col, width=120, anchor='center')
+
+        # Scrollbar for trades
+        scrollbar = ttk.Scrollbar(trades_frame, orient="vertical", command=self.trades_tree.yview)
+        self.trades_tree.configure(yscrollcommand=scrollbar.set)
+        
+        self.trades_tree.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Bind selection event
+        self.trades_tree.bind('<<TreeviewSelect>>', self.on_trade_select)
+
+    def setup_ml_tab(self):
+        """Set up the ML configuration tab."""
+        # Model Selection Frame
+        model_frame = ttk.LabelFrame(self.ml_frame, text="ML Model Configuration", padding=15)
+        model_frame.pack(fill="x", padx=10, pady=10)
+
+        ttk.Label(model_frame, text="ML Model:").grid(row=0, column=0, padx=10, pady=10, sticky="e")
+        model_menu = ttk.Combobox(model_frame, textvariable=self.ml_model_var,
+                                  values=["Enhanced Q-Learning", "Deep Q-Network"],
+                                  state="readonly", width=20)
+        model_menu.grid(row=0, column=1, padx=10, pady=10)
+
+        ttk.Button(model_frame, text="Save Model", command=self.save_ml_model).grid(row=0, column=2, padx=10, pady=10)
+        ttk.Button(model_frame, text="Load Model", command=self.load_ml_model).grid(row=0, column=3, padx=10, pady=10)
+
+        # Engine Status Frame
+        engine_frame = ttk.LabelFrame(self.ml_frame, text="Engine Status", padding=15)
+        engine_frame.pack(fill="x", padx=10, pady=10)
+
+        if ENGINE_AVAILABLE:
+            ttk.Label(engine_frame, text="✅ Enhanced Trading Engine: Connected", foreground="green").pack(pady=5)
+            ttk.Label(engine_frame, text="🤖 Advanced ML features available").pack(pady=5)
+        else:
+            ttk.Label(engine_frame, text="⚠️ Enhanced Trading Engine: Not Available", foreground="orange").pack(pady=5)
+            ttk.Label(engine_frame, text="📱 Running in standalone mode").pack(pady=5)
+
+        # Feature Information Frame
+        feature_frame = ttk.LabelFrame(self.ml_frame, text="Available Features", padding=15)
+        feature_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        feature_info = """
+Enhanced Features Available:
+• Advanced Q-Learning with Experience Replay
+• Risk Management with Position Sizing
+• Real-time Market Feature Engineering
+• Confidence-based Trade Execution
+• Continuous Learning from Market Data
+• Performance Monitoring and Analytics
+
+Technical Indicators Used:
+• RSI (Relative Strength Index)
+• MACD (Moving Average Convergence Divergence)
+• Bollinger Bands
+• Moving Averages (5, 10, 20 periods)
+• Momentum Indicators
+• Volatility Measures
+        """
+
+        feature_text = tk.Text(feature_frame, height=15, width=60, font=("Courier", 12))
+        feature_text.insert("1.0", feature_info)
+        feature_text.config(state="disabled")
+        feature_text.pack(pady=10)
+
+    def setup_performance_tab(self):
+        """Set up the performance analytics tab."""
+        # Performance Metrics Frame
+        metrics_frame = ttk.LabelFrame(self.performance_tab, text="Performance Metrics", padding=15)
+        metrics_frame.pack(fill="x", padx=10, pady=10)
+
+        # Create performance labels
+        self.total_trades_label = ttk.Label(metrics_frame, text="Total Trades: 0")
+        self.total_trades_label.grid(row=0, column=0, padx=20, pady=10, sticky="w")
+
+        self.win_rate_label = ttk.Label(metrics_frame, text="Win Rate: 0%")
+        self.win_rate_label.grid(row=0, column=1, padx=20, pady=10, sticky="w")
+
+        self.total_profit_label = ttk.Label(metrics_frame, text="Total Profit: $0.00")
+        self.total_profit_label.grid(row=0, column=2, padx=20, pady=10, sticky="w")
+
+        self.sharpe_ratio_label = ttk.Label(metrics_frame, text="Sharpe Ratio: N/A")
+        self.sharpe_ratio_label.grid(row=1, column=0, padx=20, pady=10, sticky="w")
+
+        self.max_drawdown_label = ttk.Label(metrics_frame, text="Max Drawdown: 0%")
+        self.max_drawdown_label.grid(row=1, column=1, padx=20, pady=10, sticky="w")
+
+        self.current_capital_label = ttk.Label(metrics_frame, text="Current Capital: $10,000")
+        self.current_capital_label.grid(row=1, column=2, padx=20, pady=10, sticky="w")
+
+        # Chart Frame
+        chart_frame = ttk.LabelFrame(self.performance_tab, text="Performance Chart", padding=10)
+        chart_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Create matplotlib figure
+        self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(12, 8))
+        self.canvas = FigureCanvasTkAgg(self.fig, chart_frame)
+        self.canvas.get_tk_widget().pack(fill="both", expand=True)
+
+        ttk.Button(chart_frame, text="Update Chart", command=self.update_performance_chart).pack(pady=5)
+
+    def execute_ml_trade(self):
+        """Execute ML trade using the integrated engine."""
+        if ENGINE_AVAILABLE and self.dashboard_interface:
+            try:
+                pair = self.pair_var.get()
+                
+                # Find a bot for this pair
+                bot_id = None
+                for bid, bot in self.trading_engine.bots.items():
+                    if bot.pair == pair and bot.status.value == "ACTIVE":
+                        bot_id = bid
+                        break
+                
+                if not bot_id:
+                    # Create a new bot for this pair
+                    bot_name = f"Dashboard Bot {pair}"
+                    bot_id = self.dashboard_interface.create_ml_bot(bot_name, pair)
+                    self.trading_engine.start_bot(bot_id)
+                    print(f"🆕 Created new bot for {pair}")
+                
+                # Get ML prediction
+                prediction = self.dashboard_interface.get_ml_prediction(bot_id)
+                
+                if not prediction:
+                    messagebox.showwarning("Warning", "Unable to get ML prediction. Insufficient data.")
+                    return
+                
+                action = prediction['action']
+                confidence = prediction['confidence']
+                current_price = prediction['current_price']
+                
+                # Check confidence threshold
+                if confidence < self.confidence_threshold.get():
+                    messagebox.showinfo("Low Confidence", 
+                                        f"ML prediction confidence ({confidence:.2f}) below threshold ({self.confidence_threshold.get()}).\n"
+                                        "Trade not executed.")
+                    return
+                
+                # Execute the trade
+                if action == "BUY":
+                    success = self.dashboard_interface.execute_manual_trade(bot_id, "BUY")
+                elif action == "SELL":
+                    success = self.dashboard_interface.execute_manual_trade(bot_id, "SELL")
+                else:
+                    messagebox.showinfo("ML Decision", "ML model recommends HOLD. No trade executed.")
+                    return
+                
+                if success:
+                    messagebox.showinfo("Trade Executed", 
+                                        f"🎯 ML Trade Executed Successfully!\n\n"
+                                        f"Action: {action}\n"
+                                        f"Price: ${current_price:.2f}\n"
+                                        f"Confidence: {confidence:.2f}\n"
+                                        f"Pair: {pair}")
+                    self.update_dashboard()
+                else:
+                    messagebox.showerror("Trade Failed", "Failed to execute ML trade.")
+                    
+            except Exception as e:
+                logging.error(f"Error executing ML trade: {e}")
+                messagebox.showerrormessagebox.showerror("Error", f"Failed to execute ML trade: {str(e)}")
+        else:
+            # Fallback to standalone mode
+            try:
+                if not self.ml_agent:
+                    messagebox.showerror("Error", "Please initialize an ML agent first.")
+                    return
+
+                pair = self.pair_var.get()
+                current_price = self.get_current_price(pair)
+                
+                # Get current market features
+                features = self.get_current_features_standalone(pair)
+                if features is None:
+                    messagebox.showerror("Error", "Unable to generate features for current market state.")
+                    return
+
+                # Get ML prediction
+                action = self.ml_agent.act(features)
+                confidence = 0.7  # Default confidence for standalone mode
+                
+                # Check confidence threshold
+                if confidence < self.confidence_threshold.get():
+                    messagebox.showinfo("Low Confidence", 
+                                        f"ML prediction confidence ({confidence:.2f}) below threshold ({self.confidence_threshold.get()}).\n"
+                                        "Trade not executed.")
+                    return
+
+                # Simulate trade execution in standalone mode
+                action_names = ["HOLD", "BUY", "SELL"]
+                if action != 0:  # Not hold
+                    messagebox.showinfo("Standalone Trade", 
+                                        f"🎯 Standalone ML Trade Simulation:\n\n"
+                                        f"Action: {action_names[action]}\n"
+                                        f"Price: ${current_price:.2f}\n"
+                                        f"Confidence: {confidence:.2f}\n"
+                                        f"Pair: {pair}\n\n"
+                                        f"Note: Connect to trading engine for live execution.")
+                else:
+                    messagebox.showinfo("ML Decision", "ML model recommends HOLD. No trade executed.")
+                    
+            except Exception as e:
+                logging.error(f"Error in standalone ML trade: {e}")
+                messagebox.showerror("Error", f"Failed to execute standalone trade: {str(e)}")
+
+    def get_ml_prediction(self):
+        """Get ML prediction using integrated engine."""
+        if ENGINE_AVAILABLE and self.dashboard_interface:
+            try:
+                pair = self.pair_var.get()
+                
+                # Find an active bot for this pair
+                bot_id = None
+                for bid, bot in self.trading_engine.bots.items():
+                    if bot.pair == pair:
+                        bot_id = bid
+                        break
+                
+                if not bot_id:
+                    messagebox.showwarning("Warning", "No active bot found for this pair.")
+                    return
+                
+                prediction = self.dashboard_interface.get_ml_prediction(bot_id)
+                
+                if prediction:
+                    action = prediction['action']
+                    confidence = prediction['confidence']
+                    current_price = prediction['current_price']
+                    
+                    self.prediction_label.config(text=f"Current Prediction: {action}")
+                    self.confidence_label.config(text=f"Confidence: {confidence:.2f}")
+                    
+                    messagebox.showinfo("ML Prediction", 
+                                        f"🔮 ML Prediction for {pair}\n\n"
+                                        f"Action: {action}\n"
+                                        f"Confidence: {confidence:.2f}\n"
+                                        f"Current Price: ${current_price:.2f}\n"
+                                        f"Threshold: {self.confidence_threshold.get()}\n\n"
+                                        f"Recommendation: {'✅ Execute' if confidence >= self.confidence_threshold.get() else '⏳ Wait for higher confidence'}")
+                else:
+                    messagebox.showwarning("Warning", "Unable to get ML prediction.")
+                    
+            except Exception as e:
+                logging.error(f"Error getting ML prediction: {e}")
+                messagebox.showerror("Error", f"Failed to get prediction: {str(e)}")
+        else:
+            # Fallback to standalone mode
+            try:
+                if not self.ml_agent:
+                    messagebox.showerror("Error", "Please initialize an ML agent first.")
+                    return
+
+                pair = self.pair_var.get()
+                features = self.get_current_features_standalone(pair)
+                
+                if features is None:
+                    messagebox.showerror("Error", "Unable to generate features.")
+                    return
+
+                action = self.ml_agent.act(features)
+                confidence = 0.7  # Default confidence
+
+                action_names = ["HOLD", "BUY", "SELL"]
+                prediction_text = action_names[action]
+                
+                self.prediction_label.config(text=f"Current Prediction: {prediction_text}")
+                self.confidence_label.config(text=f"Confidence: {confidence:.2f}")
+
+                current_price = self.get_current_price(pair)
+                messagebox.showinfo("Standalone ML Prediction", 
+                                    f"🔮 Standalone ML Prediction for {pair}:\n\n"
+                                    f"Action: {prediction_text}\n"
+                                    f"Confidence: {confidence:.2f}\n"
+                                    f"Current Price: ${current_price:.2f}\n"
+                                    f"Threshold: {self.confidence_threshold.get()}\n\n"
+                                    f"Note: Connect to trading engine for enhanced predictions.")
+
+            except Exception as e:
+                logging.error(f"Error getting standalone prediction: {e}")
+                messagebox.showerror("Error", f"Failed to get prediction: {str(e)}")
+
+    def train_ml_model(self):
+        """Train ML models using the integrated engine."""
+        if ENGINE_AVAILABLE and self.trading_engine:
+            try:
+                pair = self.pair_var.get()
+                
+                # Find bots for this pair
+                target_bots = [bot for bot in self.trading_engine.bots.values() if bot.pair == pair]
+                
+                if not target_bots:
+                    messagebox.showwarning("Warning", "No bots found for the selected pair.")
+                    return
+                
+                # Create training progress window
+                progress_window = tk.Toplevel(self.root)
+                progress_window.title("Training ML Models")
+                progress_window.geometry("400x200")
+                
+                progress_var = tk.DoubleVar()
+                progress_bar = ttk.Progressbar(progress_window, variable=progress_var, maximum=100)
+                progress_bar.pack(pady=20, padx=20, fill="x")
+                
+                status_label = ttk.Label(progress_window, text="Starting training...")
+                status_label.pack(pady=10)
+                
+                def training_thread():
+                    total_bots = len(target_bots)
+                    
+                    for i, bot in enumerate(target_bots):
+                        if bot.ml_agent and hasattr(bot.ml_agent, 'memory'):
+                            status_label.config(text=f"Training bot {i+1}/{total_bots}: {bot.name}")
+                            
+                            # Train using accumulated experience
+                            for _ in range(100):  # Multiple training iterations
+                                if len(bot.ml_agent.memory) > 32:
+                                    bot.ml_agent.replay()
+                            
+                            # Update progress
+                            progress = ((i + 1) / total_bots) * 100
+                            progress_var.set(progress)
+                            progress_window.update()
+                    
+                    # Save trained models
+                    self.trading_engine.save_ml_models()
+                    
+                    status_label.config(text="Training completed!")
+                    time.sleep(2)
+                    progress_window.destroy()
+                    
+                    # Show results
+                    messagebox.showinfo("Training Complete", 
+                                        f"Training completed for {total_bots} bots!\n"
+                                        f"Models have been saved automatically.")
+                    
+                    self.update_ml_status()
+
+                # Start training in separate thread
+                threading.Thread(target=training_thread, daemon=True).start()
+                
+            except Exception as e:
+                logging.error(f"Error training ML models: {e}")
+                messagebox.showerror("Error", f"Training failed: {str(e)}")
+        else:
+            # Fallback to standalone training
+            messagebox.showinfo("Standalone Training", 
+                                "Standalone ML training simulation.\n"
+                                "Connect to trading engine for live model training.")
+
+    def update_dashboard(self):
+        """Enhanced dashboard update with engine integration."""
+        # Clear existing items
+        for item in self.trades_tree.get_children():
+            self.trades_tree.delete(item)
+
+        try:
+            if ENGINE_AVAILABLE and self.dashboard_interface:
+                # Get trades from integrated engine
+                trades_df = self.dashboard_interface.get_active_trades()
+                active_trades = trades_df[trades_df['profit'] == 0] if not trades_df.empty else pd.DataFrame()
+            else:
+                # Fallback to database query
+                with self.db_manager.get_connection() as conn:
+                    active_trades = pd.read_sql_query("SELECT * FROM trades WHERE profit = 0", conn)
+
+            for _, trade in active_trades.iterrows():
+                try:
+                    if ENGINE_AVAILABLE:
+                        # Get current price from engine
+                        current_price = self.trading_engine.current_prices.get(trade.get('symbol', trade.get('pair', '')), trade['price'])
+                    else:
+                        # Fallback to file-based price lookup
+                        current_price = self.get_current_price(trade.get('symbol', trade.get('pair', 'BTC/USD')))
+                    
+                    profit_loss = self.calculate_trade_profit(
+                        trade['type'], trade['price'], current_price, trade['amount']
+                    )
+                    profit_pct = (profit_loss / (trade['price'] * trade['amount'])) * 100
+
+                    values = (
+                        trade['id'][:8] + "..." if len(trade['id']) > 8 else trade['id'],
+                        trade.get('symbol', trade.get('pair', 'N/A')),
+                        trade['type'],
+                        f"${trade['price']:.2f}",
+                        f"{trade['amount']:.6f}",
+                        f"${profit_loss:.2f} ({profit_pct:+.1f}%)",
+                        f"{trade.get('confidence_score', 0.5):.2f}",
+                        f"{trade.get('risk_score', 0.5):.2f}",
+                        f"${trade.get('stop_loss', 0):.2f}",
+                        f"${trade.get('take_profit', 0):.2f}"
+                    )
+
+                    # Color coding based on profit/loss
+                    tag = "profit" if profit_loss > 0 else "loss" if profit_loss < 0 else "neutral"
+                    self.trades_tree.insert("", "end", values=values, tags=(tag,))
+
+                except Exception as e:
+                    logging.error(f"Error updating trade display: {str(e)}")
+
+            # Configure tags for color coding
+            self.trades_tree.tag_configure("profit", foreground="green")
+            self.trades_tree.tag_configure("loss", foreground="red")
+            self.trades_tree.tag_configure("neutral", foreground="black")
+
+            # Update performance metrics and ML status
+            self.update_performance_metrics()
+            self.update_ml_status()
+
+        except Exception as e:
+            logging.error(f"Error updating dashboard: {str(e)}")
+
+    def update_ml_status(self):
+        """Update ML status with engine integration."""
+        try:
+            if ENGINE_AVAILABLE and self.trading_engine:
+                # Get ML status from active bots
+                pair = self.pair_var.get()
+                target_bot = None
+                
+                for bot in self.trading_engine.bots.values():
+                    if bot.pair == pair and bot.ml_agent:
+                        target_bot = bot
+                        break
+                
+                if target_bot and target_bot.ml_agent:
+                    agent_type = type(target_bot.ml_agent).__name__
+                    self.ml_status_label.config(text=f"ML Agent: {agent_type} (Connected)")
+                    
+                    epsilon = getattr(target_bot.ml_agent, 'epsilon', 'N/A')
+                    if isinstance(epsilon, float):
+                        self.epsilon_label.config(text=f"Exploration Rate: {epsilon:.3f}")
+                    else:
+                        self.epsilon_label.config(text=f"Exploration Rate: {epsilon}")
+                    
+                    memory_size = len(getattr(target_bot.ml_agent, 'memory', []))
+                    self.memory_label.config(text=f"Experience Buffer: {memory_size}")
+                    
+                    # Get latest prediction if available
+                    try:
+                        prediction = self.dashboard_interface.get_ml_prediction(target_bot.id)
+                        if prediction:
+                            self.prediction_label.config(text=f"Current Prediction: {prediction['action']}")
+                            self.confidence_label.config(text=f"Confidence: {prediction['confidence']:.2f}")
+                    except:
+                        pass
+                else:
+                    self.ml_status_label.config(text="ML Agent: No active ML bot for this pair")
+                    self.epsilon_label.config(text="Exploration Rate: N/A")
+                    self.memory_label.config(text="Experience Buffer: 0")
+            else:
+                # Fallback to standalone implementation
+                if hasattr(self, 'ml_agent') and self.ml_agent:
+                    agent_type = type(self.ml_agent).__name__
+                    self.ml_status_label.config(text=f"ML Agent: {agent_type} (Standalone)")
+                    
+                    epsilon = getattr(self.ml_agent, 'epsilon', 'N/A')
+                    self.epsilon_label.config(text=f"Exploration Rate: {epsilon}")
+                    
+                    memory_size = len(getattr(self.ml_agent, 'memory', []))
+                    self.memory_label.config(text=f"Experience Buffer: {memory_size}")
+                else:
+                    self.ml_status_label.config(text="ML Agent: Not Initialized (Standalone)")
+                    
+        except Exception as e:
+            logging.error(f"Error updating ML status: {e}")
+
+    def update_performance_metrics(self):
+        """Update performance metrics with engine integration."""
+        try:
+            if ENGINE_AVAILABLE and self.dashboard_interface:
+                # Get comprehensive performance data from engine
+                all_trades = self.dashboard_interface.get_active_trades()
+                
+                if not all_trades.empty:
+                    total_trades = len(all_trades)
+                    completed_trades = all_trades[all_trades['profit'] != 0]
+                    
+                    if not completed_trades.empty:
+                        winning_trades = len(completed_trades[completed_trades['profit'] > 0])
+                        win_rate = (winning_trades / len(completed_trades)) * 100
+                        total_profit = completed_trades['profit'].sum()
+                        
+                        # Calculate Sharpe ratio (simplified)
+                        if len(completed_trades) > 1:
+                            returns = completed_trades['profit'] / (completed_trades['price'] * completed_trades['amount'])
+                            sharpe_ratio = returns.mean() / returns.std() * np.sqrt(252) if returns.std() > 0 else 0
+                        else:
+                            sharpe_ratio = 0
+                        
+                        # Max drawdown
+                        cumulative_profit = completed_trades['profit'].cumsum()
+                        running_max = cumulative_profit.expanding().max()
+                        drawdown = (cumulative_profit - running_max) / running_max.abs()
+                        max_drawdown = drawdown.min() * 100 if not drawdown.empty else 0
+                    else:
+                        winning_trades = 0
+                        win_rate = 0
+                        total_profit = 0
+                        sharpe_ratio = 0
+                        max_drawdown = 0
+                    
+                    # Get current capital from engine
+                    total_balance = sum(bot.balance for bot in self.trading_engine.bots.values())
+                else:
+                    total_trades = 0
+                    win_rate = 0
+                    total_profit = 0
+                    sharpe_ratio = 0
+                    max_drawdown = 0
+                    total_balance = 0
+            else:
+                # Fallback to database-based calculation
+                with self.db_manager.get_connection() as conn:
+                    all_trades = pd.read_sql_query("SELECT * FROM trades", conn)
+                    
+                if not all_trades.empty:
+                    total_trades = len(all_trades)
+                    completed_trades = all_trades[all_trades['profit'] != 0]
+                    
+                    if not completed_trades.empty:
+                        winning_trades = len(completed_trades[completed_trades['profit'] > 0])
+                        win_rate = (winning_trades / len(completed_trades)) * 100
+                        total_profit = completed_trades['profit'].sum()
+                        sharpe_ratio = 0  # Simplified
+                        max_drawdown = 0  # Simplified
+                    else:
+                        winning_trades = 0
+                        win_rate = 0
+                        total_profit = 0
+                        sharpe_ratio = 0
+                        max_drawdown = 0
+                    
+                    total_balance = getattr(self, 'risk_manager', type('obj', (object,), {'current_capital': 10000})()).current_capital
+                else:
+                    total_trades = 0
+                    win_rate = 0
+                    total_profit = 0
+                    sharpe_ratio = 0
+                    max_drawdown = 0
+                    total_balance = 10000
+
+            # Update labels
+            self.total_trades_label.config(text=f"Total Trades: {total_trades}")
+            self.win_rate_label.config(text=f"Win Rate: {win_rate:.1f}%")
+            self.total_profit_label.config(text=f"Total Profit: ${total_profit:.2f}")
+            self.sharpe_ratio_label.config(text=f"Sharpe Ratio: {sharpe_ratio:.2f}")
+            self.max_drawdown_label.config(text=f"Max Drawdown: {max_drawdown:.1f}%")
+            self.current_capital_label.config(text=f"Current Capital: ${total_balance:.2f}")
+
+        except Exception as e:
+            logging.error(f"Error updating performance metrics: {e}")
+
+    def update_performance_chart(self):
+        """Update the performance analytics chart."""
+        try:
+            # Clear previous plots
+            self.ax1.clear()
+            self.ax2.clear()
+
+            # Get trade data
+            with self.db_manager.get_connection() as conn:
+                trades_df = pd.read_sql_query("SELECT * FROM trades ORDER BY timestamp", conn)
+
+            if trades_df.empty:
+                self.ax1.text(0.5, 0.5, 'No trades available', ha='center', va='center', transform=self.ax1.transAxes)
+                self.ax2.text(0.5, 0.5, 'No performance data', ha='center', va='center', transform=self.ax2.transAxes)
+                self.canvas.draw()
+                return
+
+            # Calculate cumulative P&L
+            trades_df['timestamp'] = pd.to_datetime(trades_df['timestamp'])
+            trades_df['cumulative_profit'] = trades_df['profit'].cumsum()
+
+            # Plot 1: Cumulative P&L over time
+            self.ax1.plot(trades_df['timestamp'], trades_df['cumulative_profit'], 'b-', linewidth=2)
+            self.ax1.set_title('Cumulative Profit/Loss Over Time')
+            self.ax1.set_xlabel('Date')
+            self.ax1.set_ylabel('Cumulative P&L ($)')
+            self.ax1.grid(True, alpha=0.3)
+
+            # Plot 2: Trade performance distribution
+            completed_trades = trades_df[trades_df['profit'] != 0]
+            if not completed_trades.empty:
+                profits = completed_trades['profit']
+                self.ax2.hist(profits, bins=20, alpha=0.7, color='green' if profits.mean() > 0 else 'red')
+                self.ax2.axvline(profits.mean(), color='black', linestyle='--', label=f'Mean: ${profits.mean():.2f}')
+                self.ax2.set_title('Trade Profit/Loss Distribution')
+                self.ax2.set_xlabel('Profit/Loss ($)')
+                self.ax2.set_ylabel('Frequency')
+                self.ax2.legend()
+                self.ax2.grid(True, alpha=0.3)
+
+            plt.tight_layout()
+            self.canvas.draw()
+
+        except Exception as e:
+            logging.error(f"Error updating performance chart: {str(e)}")
+
+    def on_trade_select(self, event):
+        """Handle trade selection in the tree view."""
+        selection = self.trades_tree.selection()
+        if selection:
+            item = self.trades_tree.item(selection[0])
+            trade_id = item['values'][0]
+            
+            # Find the selected trade
+            with self.db_manager.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM trades WHERE id LIKE ?", (f"{trade_id}%",))
+                trade = cursor.fetchone()
+                
+            if trade:
+                self.selected_trade = {
+                    'id': trade[0],
+                    'symbol': trade[8] if len(trade) > 8 else 'BTC/USD',
+                    'type': trade[3],
+                    'price': trade[4],
+                    'amount': trade[5]
+                }
+
+    def toggle_auto_trade(self):
+        """Enhanced auto trading with engine integration."""
+        if self.auto_trade_var.get():
+            if ENGINE_AVAILABLE and self.trading_engine:
+                # Use engine's built-in auto trading
+                pair = self.pair_var.get()
+                
+                # Find or create bot for this pair
+                target_bot = None
+                for bot in self.trading_engine.bots.values():
+                    if bot.pair == pair:
+                        target_bot = bot
+                        break
+                
+                if not target_bot:
+                    # Create new bot
+                    bot_name = f"Auto Trading Bot {pair}"
+                    bot_id = self.dashboard_interface.create_ml_bot(bot_name, pair)
+                    self.trading_engine.start_bot(bot_id)
+                    target_bot = self.trading_engine.bots[bot_id]
+                
+                if target_bot.ml_agent is None:
+                    messagebox.showerror("Error", "ML agent not available for auto trading.")
+                    self.auto_trade_var.set(False)
+                    return
+                
+                # Activate the bot for auto trading
+                from trade_chat_bot import BotStatus
+                target_bot.status = BotStatus.ACTIVE
+                
+                logging.info(f"Auto trading enabled for {target_bot.name}")
+                messagebox.showinfo("Auto Trading", f"✅ Auto trading enabled for {target_bot.name}")
+            else:
+                # Fallback message for standalone mode
+                messagebox.showinfo("Standalone Mode", 
+                                    "Auto trading simulation enabled.\n"
+                                    "Connect to trading engine for live auto trading.")
+                logging.info("Auto trading simulation enabled (standalone mode).")
+        else:
+            if ENGINE_AVAILABLE and self.trading_engine:
+                # Pause bots for this pair
+                pair = self.pair_var.get()
+                for bot in self.trading_engine.bots.values():
+                    if bot.pair == pair:
+                        from trade_chat_bot import BotStatus
+                        bot.status = BotStatus.PAUSED
+                
+                logging.info("Auto trading disabled.")
+                messagebox.showinfo("Auto Trading", "Auto trading disabled.")
+            else:
+                logging.info("Auto trading simulation disabled.")
+
+    def save_ml_model(self):
+        """Save ML models with engine integration."""
+        try:
+            if ENGINE_AVAILABLE and self.trading_engine:
+                self.trading_engine.save_ml_models()
+                messagebox.showinfo("Success", "✅ All ML models saved successfully!")
+            else:
+                # Fallback to standalone implementation
+                if hasattr(self, 'ml_agent') and self.ml_agent:
+                    self.ml_agent.save_q_table()
+                    messagebox.showinfo("Success", "✅ Standalone ML model saved successfully!")
+                else:
+                    messagebox.showerror("Error", "No ML model to save.")
+                    
+        except Exception as e:
+            logging.error(f"Error saving ML models: {e}")
+            messagebox.showerror("Error", f"Failed to save models: {str(e)}")
+
+    def load_ml_model(self):
+        """Load ML models with engine integration."""
+        try:
+            if ENGINE_AVAILABLE and self.trading_engine:
+                self.trading_engine.load_ml_models()
+                self.update_ml_status()
+                messagebox.showinfo("Success", "✅ All ML models loaded successfully!")
+            else:
+                # Fallback to standalone implementation
+                if hasattr(self, 'ml_agent') and self.ml_agent:
+                    self.ml_agent.load_q_table()
+                    self.update_ml_status()
+                    messagebox.showinfo("Success", "✅ Standalone ML model loaded successfully!")
+                else:
+                    messagebox.showerror("Error", "Please initialize an ML agent first.")
+                    
+        except Exception as e:
+            logging.error(f"Error loading ML models: {e}")
+            messagebox.showerror("Error", f"Failed to load models: {str(e)}")
+
+    def exit_trade(self):
+        """Enhanced trade exit with engine integration."""
+        if not self.selected_trade:
+            messagebox.showwarning("Warning", "Please select a trade to exit.")
+            return
+
+        try:
+            if ENGINE_AVAILABLE and self.dashboard_interface:
+                # Find the bot that owns this trade
+                trade_symbol = self.selected_trade.get('symbol', self.selected_trade.get('pair', ''))
+                
+                target_bot = None
+                for bot in self.trading_engine.bots.values():
+                    if bot.pair == trade_symbol and bot.position:
+                        target_bot = bot
+                        break
+                
+                if target_bot:
+                    # Get current price
+                    current_price = self.trading_engine.current_prices.get(target_bot.pair)
+                    if current_price:
+                        # Execute sell through engine
+                        from trade_chat_bot import OrderType
+                        success = self.trading_engine.execute_trade(
+                            target_bot, OrderType.SELL, target_bot.position.amount, current_price
+                        )
+                        
+                        if success:
+                            profit = (current_price - target_bot.position.entry_price) * target_bot.position.amount if target_bot.position else 0
+                            messagebox.showinfo("Trade Exited", 
+                                                f"✅ Trade exited successfully!\n\n"
+                                                f"Exit Price: ${current_price:.2f}\n"
+                                                f"Profit/Loss: ${profit:.2f}")
+                            self.update_dashboard()
+                            self.selected_trade = None
+                        else:
+                            messagebox.showerror("Error", "Failed to exit trade through engine.")
+                    else:
+                        messagebox.showerror("Error", "Unable to get current price.")
+                else:
+                    messagebox.showwarning("Warning", "No active position found for this trade.")
+            else:
+                # Fallback to standalone simulation
+                trade_id = self.selected_trade['id']
+                symbol = self.selected_trade['symbol']
+                entry_price = self.selected_trade['price']
+                amount = self.selected_trade['amount']
+
+                current_price = self.get_current_price(symbol)
+                profit = self.calculate_trade_profit(self.selected_trade['type'], entry_price, current_price, amount)
+
+                messagebox.showinfo("Standalone Trade Exit", 
+                                    f"📝 Trade exit simulation:\n\n"
+                                    f"Entry Price: ${entry_price:.2f}\n"
+                                    f"Exit Price: ${current_price:.2f}\n"
+                                    f"Profit/Loss: ${profit:.2f}\n\n"
+                                    f"Note: Connect to trading engine for live execution.")
+
+                self.selected_trade = None
+                
+        except Exception as e:
+            logging.error(f"Error exiting trade: {e}")
+            messagebox.showerror("Error", f"Failed to exit trade: {str(e)}")
+
+    def get_current_features_standalone(self, pair):
+        """Get current market features for standalone mode."""
+        try:
+            symbol = pair.split('/')[0].lower()
+            price_file = os.path.join("E:/Trade Chat Bot/backups", f"historical_prices_{symbol}.csv")
+            
+            if not os.path.exists(price_file):
+                return None
+
+            df = pd.read_csv(price_file)
+            if len(df) < 20:
+                return None
+                
+            # Use last 50 prices for feature generation
+            recent_prices = df['price'].tail(50).values
+            features_df = self.feature_engine.engineer_features(recent_prices)
+            
+            if features_df is not None and len(features_df) > 0:
+                features = features_df.iloc[-1].values
+                features = np.nan_to_num(features)
+                features = np.clip(features, -10, 10)
+                
+                if np.max(np.abs(features)) > 0:
+                    features = features / (np.max(np.abs(features)) + 1e-8)
+                    
+                return features
+                
+        except Exception as e:
+            logging.error(f"Error getting standalone features: {e}")
+            
+        return None
+
+    def calculate_trade_profit(self, trade_type, entry_price, exit_price, amount):
+        """Calculate profit for a completed trade."""
+        if trade_type == "BUY":
+            return (exit_price - entry_price) * amount
+        elif trade_type == "SELL":
+            return (entry_price - exit_price) * amount
+        return 0
+
+    def generate_trade_id(self):
+        """Generate unique trade ID."""
+        return f"ML_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{random.randint(1000, 9999)}"
+
+    def create_directories(self):
+        """Create necessary directories if they don't exist."""
+        directories = [
+            "E:/Trade Chat Bot",
+            "E:/Trade Chat Bot/backups",
+            "E:/Trade Chat Bot/models"
+        ]
+        for directory in directories:
+            if not os.path.exists(directory):
+                try:
+                    os.makedirs(directory)
+                    logging.info(f"Created directory: {directory}")
+                except Exception as e:
+                    logging.error(f"Failed to create directory {directory}: {str(e)}")
+
+    def check_and_generate_price_data(self):
+        """Check if price data exists and generate if missing."""
+        missing_files = []
+        pairs = ["BTC/USD", "ETH/USD", "ADA/USD", "SOL/USD", "SUI/USD", "SHIB/USD", "XRP/USD"]
+        base_prices = {
+            'btc': 104000,
+            'eth': 2500,
+            'ada': 0.67,
+            'sol': 154,
+            'sui': 3.24,
+            'shib': 0.00001,import os
+import sqlite3
+import pandas as pd
+import numpy as np
+import logging
+import tkinter as tk
+from tkinter import ttk, messagebox
+from datetime import datetime, timedelta
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import threading
+import random
+import ctypes
+from pathlib import Path
+import json
+import time
+from collections import deque
+import warnings
+warnings.filterwarnings('ignore')
+
+# Add system path for engine integration
+import sys
+sys.path.append('E:/Trade Chat Bot')
+
+# Engine integration imports
+try:
+    from trade_chat_bot import (
+        get_trading_engine, 
+        get_dashboard_interface, 
+        start_engine, 
+        stop_engine,
+        TradeChatBot,
+        OrderType,
+        AdvancedFeatureEngine,
+        RiskManager
+    )
+    ENGINE_AVAILABLE = True
+    print("✅ Enhanced trading engine detected and loaded!")
+except ImportError as e:
+    ENGINE_AVAILABLE = False
+    print(f"⚠️ Enhanced trading engine not available: {e}")
+    print("📝 Running in standalone mode...")
+
+# Import ML libraries if available
+try:
+    import tensorflow as tf
+    from tensorflow.keras import layers, models, optimizers
+    ML_AVAILABLE = True
+except ImportError:
+    ML_AVAILABLE = False
+    if not ENGINE_AVAILABLE:
+        logging.warning("TensorFlow not available. Using basic Q-learning only.")
+
+try:
+    import talib
+    TALIB_AVAILABLE = True
+except ImportError:
+    TALIB_AVAILABLE = False
+    if not ENGINE_AVAILABLE:
+        logging.warning("TA-Lib not available. Using basic technical indicators.")
+
+# Enable DPI awareness for Windows
+try:
+    ctypes.windll.shcore.SetProcessDpiAwareness(1)
+except Exception as e:
+    logging.error(f"DPI awareness error: {str(e)}")
+
+# Set up logging configuration
+logging.basicConfig(
+    filename='E:/Trade Chat Bot/trade_chat_bot.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+def configure_messagebox():
+    """Configure messagebox to use specific fonts."""
+    root = tk.Tk()
+    root.withdraw()
+    root.option_add('*Dialog.msg.font', 'Arial 22')
+    root.option_add('*Dialog.msg.wrapLength', '800')
+    root.option_add('*Dialog.but.font', 'Arial 22')
+    root.option_add('*Dialog.title.font', 'Arial 22 bold')
+    return root
+
+_msg_root = configure_messagebox()
+
+# Standalone ML classes (fallback when engine not available)
+class StandaloneFeatureEngine:
+    """Simplified feature engineering for standalone mode."""
+    
+    def __init__(self, lookback_period=20):
+        self.lookback_period = lookback_period
+        
+    def calculate_rsi(self, prices, period=14):
+        """Calculate RSI indicator."""
+        delta = np.diff(prices)
+        gain = np.where(delta > 0, delta, 0)
+        loss = np.where(delta < 0, -delta, 0)
+        avg_gain = pd.Series(gain).rolling(period).mean()
+        avg_loss = pd.Series(loss).rolling(period).mean()
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+        return np.concatenate([[50], rsi.fillna(50).values])
+    
+    def engineer_features(self, price_data):
+        """Create basic feature set."""
+        if len(price_data) < self.lookback_period:
+            return None
+            
+        df = pd.DataFrame({'price': price_data}) if isinstance(price_data, list) else price_data.copy()
+        features = pd.DataFrame(index=df.index)
+        prices = df['price'].values
+        
+        # Basic features
+        features['returns'] = df['price'].pct_change()
+        features['volatility'] = features['returns'].rolling(20).std()
+        features['rsi'] = self.calculate_rsi(prices)
+        
+        # Moving averages
+        for period in [5, 10, 20]:
+            features[f'sma_{period}'] = df['price'].rolling(period).mean()
+            features[f'price_to_sma_{period}'] = df['price'] / features[f'sma_{period}']
+        
+        return features.fillna(method='ffill').fillna(0)
+
+class StandaloneQLearningAgent:
+    """Simplified Q-Learning agent for standalone mode."""
+    
+    def __init__(self, state_size=10, action_size=3):
+        self.state_size = state_size
+        self.action_size = action_size
+        self.epsilon = 0.5
+        self.memory = deque(maxlen=1000)
+        self.q_table = {}
+        
+    def state_to_key(self, state):
+        return str(np.round(state, 2).tolist())
+    
+    def act(self, state):
+        if np.random.random() <= self.epsilon:
+            return np.random.randint(self.action_size)
+        state_key = self.state_to_key(state)
+        if state_key not in self.q_table:
+            self.q_table[state_key] = np.zeros(self.action_size)
+        return np.argmax(self.q_table[state_key])
+    
+    def save_q_table(self, filepath="E:/Trade Chat Bot/q_table.json"):
+        try:
+            with open(filepath, 'w') as f:
+                json_q_table = {k: v.tolist() for k, v in self.q_table.items()}
+                json.dump({'q_table': json_q_table, 'epsilon': self.epsilon}, f)
+        except Exception as e:
+            logging.error(f"Error saving Q-table: {e}")
+
+class StandaloneRiskManager:
+    """Simplified risk manager for standalone mode."""
+    
+    def __init__(self, initial_capital=10000):
+        self.current_capital = initial_capital
+        self.max_risk_per_trade = 0.02
+    
+    def calculate_position_size(self, entry_price, stop_loss_price, confidence_score=1.0):
+        risk_amount = self.current_capital * self.max_risk_per_trade
+        if stop_loss_price == 0 or entry_price == stop_loss_price:
+            return risk_amount / entry_price * 0.5
+        price_risk = abs(entry_price - stop_loss_price) / entry_price
+        return (risk_amount * confidence_score) / (price_risk * entry_price)
+
+class DatabaseManager:
+    """Manage database operations for the trading bot."""
+
+    def __init__(self, db_path):
+        self.db_path = db_path
+
+    def get_connection(self):
+        """Return database connection."""
+        logging.info(f"Connecting to database at: {self.db_path}")
+        return sqlite3.connect(self.db_path)
+
+    def initialize_db(self):
+        """Initialize the database schema."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS trades (
+                    id TEXT PRIMARY KEY,
+                    bot_id TEXT,
+                    timestamp TEXT,
+                    type TEXT,
+                    price REAL,
+                    amount REAL,
+                    profit REAL DEFAULT 0,
+                    balance_after REAL,
+                    symbol TEXT,
+                    stop_loss REAL DEFAULT 0,
+                    take_profit REAL DEFAULT 0,
+                    confidence_score REAL DEFAULT 0.5,
+                    ml_prediction REAL DEFAULT 0,
+                    risk_score REAL DEFAULT 0.5
+                )
+            ''')
+            conn.commit()
+            logging.info("Database initialized successfully.")
+
+    def get_trades_by_timeframe(self, start_date: datetime) -> pd.DataFrame:
+        """Fetch trades given a starting date."""
+        with self.get_connection() as conn:
+            query = "SELECT * FROM trades WHERE timestamp >= ?"
+            df = pd.read_sql_query(query, conn, params=(start_date.strftime('%Y-%m-%d %H:%M:%S'),))
+            return df
+
+class TradingBotDashboard:
+    """Enhanced trading bot dashboard with ML capabilities and engine integration."""
+
+    def __init__(self, root):
+        self.root = root
+        
+        # Initialize engine integration FIRST
+        if ENGINE_AVAILABLE:
+            try:
+                self.trading_engine = get_trading_engine()
+                self.dashboard_interface = get_dashboard_interface()
+                self.engine_running = False
+                print("🔗 Connected to trading engine successfully!")
+            except Exception as e:
+                print(f"❌ Failed to connect to trading engine: {e}")
+                self.trading_engine = None
+                self.dashboard_interface = None
+                self.engine_running = False
+        else:
+            self.trading_engine = None
+            self.dashboard_interface = None
+            self.engine_running = False
+        
+        # Dashboard variables
+        self.strategy_var = tk.StringVar(value="Enhanced Q-Learning")
+        self.pair_var = tk.StringVar(value="ETH/USD")
+        self.order_type_var = tk.StringVar(value="Market")
+        self.timeframe_var = tk.StringVar(value="Day")
+        self.auto_trade_var = tk.BooleanVar(value=False)
+        self.profit_threshold = tk.DoubleVar(value=2.0)
+        self.stop_loss_threshold = tk.DoubleVar(value=-1.5)
+        
+        # ML-specific variables
+        self.ml_model_var = tk.StringVar(value="Enhanced Q-Learning")
+        self.confidence_threshold = tk.DoubleVar(value=0.6)
+        self.max_risk_per_trade = tk.DoubleVar(value=2.0)
+        
+        self.selected_trade = None
+        self.stop_auto_trade = threading.Event()
+        self.auto_trade_thread = None
+        
+        # Initialize components based on availability
+        if ENGINE_AVAILABLE and self.trading_engine is not None:
+            self.initialize_engine_components()
+        else:
+            self.initialize_standalone_components()
+        
+        self.setup_window()
+        self.setup_database()
+        self.setup_styles()
+        self.setup_widgets()
+        
+        self.create_directories()
+        self.check_and_generate_price_data()
+        self.update_dashboard()
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def initialize_engine_components(self):
+        """Initialize components when engine is available."""
+        try:
+            # Create some default ML bots
+            self.create_default_ml_bots()
+            
+            # Start the engine
+            start_engine()
+            self.engine_running = True
+            print("🚀 Trading engine started successfully!")
+            
+            # Start periodic updates
+            self.start_engine_sync()
+            
+        except Exception as e:
+            logging.error(f"Failed to initialize engine components: {e}")
+            print(f"❌ Engine initialization failed: {e}")
+
+    def initialize_standalone_components(self):
+        """Initialize fallback components for standalone mode."""
+        # Initialize standalone ML components
+        self.feature_engine = StandaloneFeatureEngine()
+        self.risk_manager = StandaloneRiskManager()
+        self.ml_agent = StandaloneQLearningAgent()
+        self.current_state = None
+        self.previous_state = None
+        self.previous_action = None
+        print("📱 Initialized in standalone mode")
+
+    def create_default_ml_bots(self):
+        """Create default ML-enabled bots."""
+        if not self.dashboard_interface:
+            return
+            
+        default_bots = [
+            ("BTC/USD", "Bitcoin ML Bot"),
+            ("ETH/USD", "Ethereum ML Bot"),
+            ("ADA/USD", "Cardano ML Bot"),
+            ("SOL/USD", "Solana ML Bot")
+        ]
+        
+        for pair, name in default_bots:
+            try:
+                bot_id = self.dashboard_interface.create_ml_bot(name, pair, "Enhanced Q-Learning")
+                self.trading_engine.start_bot(bot_id)
+                logging.info(f"Created ML bot: {name} ({bot_id})")
+                print(f"🤖 Created ML bot: {name}")
+            except Exception as e:
+                logging.error(f"Failed to create bot {name}: {e}")
+
+    def start_engine_sync(self):
+        """Start periodic synchronization with the trading engine."""
+        def sync_loop():
+            while self.engine_running and ENGINE_AVAILABLE:
+                try:
+                    self.update_from_engine()
+                    time.sleep(30)  # Update every 30 seconds
+                except Exception as e:
+                    logging.error(f"Engine sync error: {e}")
+                    time.sleep(60)
+        
+        sync_thread = threading.Thread(target=sync_loop, daemon=True)
+        sync_thread.start()
+
+    def update_from_engine(self):
+        """Update dashboard data from trading engine."""
+        if not self.trading_engine:
+            return
+            
+        try:
+            # Schedule UI update in main thread
+            self.root.after(0, self.update_dashboard)
+            self.root.after(0, self.update_ml_status)
+            
+        except Exception as e:
+            logging.error(f"Error updating from engine: {e}")
+
+    def setup_window(self):
+        """Set up the main application window."""
+        self.root.title("Enhanced Trading Bot Dashboard with ML Integration")
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        window_width = int(screen_width * 0.95)
+        window_height = int(screen_height * 0.95)
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+        self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        self.root.minsize(1800, 1000)
+
+    def setup_styles(self):
+        """Set up ttk styles with custom fonts."""
+        style = ttk.Style()
+        style.configure(".", font=("Montserrat", 18))
+        style.configure("TLabel", font=("Montserrat", 18))
+        style.configure("TButton", font=("Montserrat", 18), padding=(8, 4))
+        style.configure("TCheckbutton", font=("Montserrat", 18))
+        style.configure("TLabelFrame", font=("Montserrat", 18, "bold"))
+        style.configure("TEntry", font=("Montserrat", 18))
+        style.configure("TCombobox", font=("Montserrat", 18))
+        style.configure("Treeview", font=("Montserrat", 16), rowheight=80)
+        style.configure("Treeview.Heading", font=("Montserrat", 18, "bold"))
+
+    def setup_database(self):
+        """Initialize the database manager and create database schema."""
+        db_path = Path("E:/Trade Chat Bot/trade_chat_bot.db").resolve()
+        self.db_manager = DatabaseManager(db_path)
+        self.db_manager.initialize_db()
+
+    def setup_widgets(self):
+        """Set up all GUI widgets with ML enhancements."""
+        # Create notebook for tabbed interface
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        # Main trading tab
+        self.main_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.main_frame, text="Trading Controls")
+        
+        # ML Configuration tab
+        self.ml_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.ml_frame, text="ML Configuration")
+        
+        # Performance tab
+        self.performance_tab = ttk.Frame(self.notebook)
+        self.notebook.add(self.performance_tab, text="Performance Analytics")
+        
+        self.setup_main_tab()
+        self.setup_ml_tab()
+        self.setup_performance_tab()
+
+    def setup_main_tab(self):
+        """Set up the main trading controls tab."""
+        # Trading Controls Frame
+        top_frame = ttk.LabelFrame(self.main_frame, text="Enhanced Trading Controls", padding=15)
+        top_frame.pack(fill="x", padx=5, pady=5)
+
+        # Strategy and pair selection
+        ttk.Label(top_frame, text="Strategy:").grid(row=0, column=0, padx=10, pady=10, sticky="e")
+        strategy_menu = ttk.Combobox(top_frame, textvariable=self.strategy_var, 
+                                      values=["Enhanced Q-Learning", "Deep Q-Network", "DCA", "Grid Trading"], 
+                                      state="readonly", width=20)
+        strategy_menu.grid(row=0, column=1, padx=10, pady=10)
+
+        ttk.Label(top_frame, text="Trading Pair:").grid(row=0, column=2, padx=10, pady=10, sticky="e")
+        pair_menu = ttk.Combobox(top_frame, textvariable=self.pair_var, 
+                                 values=["BTC/USD", "ETH/USD", "ADA/USD", "SOL/USD", "SUI/USD", "SHIB/USD", "XRP/USD"],
+                                 state="readonly", width=15)
+        pair_menu.grid(row=0, column=3, padx=10, pady=10)
+        pair_menu.bind("<<ComboboxSelected>>", lambda event: self.update_ml_status())
+
+        # Risk management parameters
+        ttk.Label(top_frame, text="Max Risk per Trade (%):").grid(row=1, column=0, padx=10, pady=10, sticky="e")
+        ttk.Entry(top_frame, textvariable=self.max_risk_per_trade, width=10).grid(row=1, column=1, padx=10, pady=10)
+
+        ttk.Label(top_frame, text="Confidence Threshold:").grid(row=1, column=2, padx=10, pady=10, sticky="e")
+        ttk.Entry(top_frame, textvariable=self.confidence_threshold, width=10).grid(row=1, column=3, padx=10, pady=10)
+
+        ttk.Label(top_frame, text="Profit Threshold (%):").grid(row=1, column=4, padx=10, pady=10, sticky="e")
+        ttk.Entry(top_frame, textvariable=self.profit_threshold, width=10).grid(row=1, column=5, padx=10, pady=10)
+
+        ttk.Label(top_frame, text="Stop Loss (%):").grid(row=2, column=0, padx=10, pady=10, sticky="e")
+        ttk.Entry(top_frame, textvariable=self.stop_loss_threshold, width=10).grid(row=2, column=1, padx=10, pady=10)
+
+        # Control buttons
+        ttk.Button(top_frame, text="Train ML Model", command=self.train_ml_model).grid(row=2, column=2, padx=10, pady=10)
+        ttk.Button(top_frame, text="Get ML Prediction", command=self.get_ml_prediction).grid(row=2, column=3, padx=10, pady=10)
+
+        # Auto trading and manual controls
+        auto_trade_checkbox = ttk.Checkbutton(top_frame, text="Auto Trading (ML)", variable=self.auto_trade_var,
+                                               command=self.toggle_auto_trade)
+        auto_trade_checkbox.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+
+        ttk.Button(top_frame, text="Execute ML Trade", command=self.execute_ml_trade).grid(row=3, column=2, padx=10, pady=10)
+        ttk.Button(top_frame, text="Exit Selected Trade", command=self.exit_trade).grid(row=3, column=3, padx=10, pady=10)
+        ttk.Button(top_frame, text="Refresh Dashboard", command=self.update_dashboard).grid(row=3, column=4, padx=10, pady=10)
+
+        # ML Status Frame
+        ml_status_frame = ttk.LabelFrame(self.main_frame, text="ML Status & Predictions", padding=10)
+        ml_status_frame.pack(fill="x", padx=5, pady=5)
+
+        self.ml_status_label = ttk.Label(ml_status_frame, text="ML Agent: Initializing...")
+        self.ml_status_label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
+
+        self.prediction_label = ttk.Label(ml_status_frame, text="Current Prediction: None")
+        self.prediction_label.grid(row=0, column=1, padx=10, pady=5, sticky="w")
+
+        self.confidence_label = ttk.Label(ml_status_frame, text="Confidence: N/A")
+        self.confidence_label.grid(row=0, column=2, padx=10, pady=5, sticky="w")
+
+        self.epsilon_label = ttk.Label(ml_status_frame, text="Exploration Rate: N/A")
+        self.epsilon_label.grid(row=1, column=0, padx=10, pady=5, sticky="w")
+
+        self.memory_label = ttk.Label(ml_status_frame, text="Experience Buffer: 0")
+        self.memory_label.grid(row=1, column=1, padx=10, pady=5, sticky="w")
+
+        # Active Trades Frame with enhanced columns
+        trades_frame = ttk.LabelFrame(self.main_frame, text="Active Trades", padding=10)
+        trades_frame.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # Create Treeview for better trade display
+        columns = ('ID', 'Symbol', 'Type', 'Entry Price', 'Amount', 'Current P/L', 'ML Confidence', 'Risk Score', 'Stop Loss', 'Take Profit')
+        self.trades_tree = ttk.Treeview(trades_frame, columns=columns, show='headings', height=10)
+        
+        for col in columns:
+            self.trades_tree.heading(col, text=col)
+            self.trades_tree.column(col, width=120, anchor='center')
+
+        # Scrollbar for trades
+        scrollbar = ttk.Scrollbar(trades_frame, orient="vertical", command=self.trades_tree.yview)
+        self.trades_tree.configure(yscrollcommand=scrollbar.set)
+        
+        self.trades_tree.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Bind selection event
+        self.trades_tree.bind('<<TreeviewSelect>>', self.on_trade_select)
+
+    def setup_ml_tab(self):
+        """Set up the ML configuration tab."""
+        # Model Selection Frame
+        model_frame = ttk.LabelFrame(self.ml_frame, text="ML Model Configuration", padding=15)
+        model_frame.pack(fill="x", padx=10, pady=10)
+
+        ttk.Label(model_frame, text="ML Model:").grid(row=0, column=0, padx=10, pady=10, sticky="e")
+        model_menu = ttk.Combobox(model_frame, textvariable=self.ml_model_var,
+                                  values=["Enhanced Q-Learning", "Deep Q-Network"],
+                                  state="readonly", width=20)
+        model_menu.grid(row=0, column=1, padx=10, pady=10)
+
+        ttk.Button(model_frame, text="Save Model", command=self.save_ml_model).grid(row=0, column=2, padx=10, pady=10)
+        ttk.Button(model_frame, text="Load Model", command=self.load_ml_model).grid(row=0, column=3, padx=10, pady=10)
+
+        # Engine Status Frame
+        engine_frame = ttk.LabelFrame(self.ml_frame, text="Engine Status", padding=15)
+        engine_frame.pack(fill="x", padx=10, pady=10)
+
+        if ENGINE_AVAILABLE:
+            ttk.Label(engine_frame, text="✅ Enhanced Trading Engine: Connected", foreground="green").pack(pady=5)
+            ttk.Label(engine_frame, text="🤖 Advanced ML features available").pack(pady=5)
+        else:
+            ttk.Label(engine_frame, text="⚠️ Enhanced Trading Engine: Not Available", foreground="orange").pack(pady=5)
+            ttk.Label(engine_frame, text="📱 Running in standalone mode").pack(pady=5)
+
+        # Feature Information Frame
+        feature_frame = ttk.LabelFrame(self.ml_frame, text="Available Features", padding=15)
+        feature_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        feature_info = """
+Enhanced Features Available:
+• Advanced Q-Learning with Experience Replay
+• Risk Management with Position Sizing
+• Real-time Market Feature Engineering
+• Confidence-based Trade Execution
+• Continuous Learning from Market Data
+• Performance Monitoring and Analytics
+
+Technical Indicators Used:
+• RSI (Relative Strength Index)
+• MACD (Moving Average Convergence Divergence)
+• Bollinger Bands
+• Moving Averages (5, 10, 20 periods)
+• Momentum Indicators
+• Volatility Measures
+        """
+
+        feature_text = tk.Text(feature_frame, height=15, width=60, font=("Courier", 12))
+        feature_text.insert("1.0", feature_info)
+        feature_text.config(state="disabled")
+        feature_text.pack(pady=10)
+
+    def setup_performance_tab(self):
+        """Set up the performance analytics tab."""
+        # Performance Metrics Frame
+        metrics_frame = ttk.LabelFrame(self.performance_tab, text="Performance Metrics", padding=15)
+        metrics_frame.pack(fill="x", padx=10, pady=10)
+
+        # Create performance labels
+        self.total_trades_label = ttk.Label(metrics_frame, text="Total Trades: 0")
+        self.total_trades_label.grid(row=0, column=0, padx=20, pady=10, sticky="w")
+
+        self.win_rate_label = ttk.Label(metrics_frame, text="Win Rate: 0%")
+        self.win_rate_label.grid(row=0, column=1, padx=20, pady=10, sticky="w")
+
+        self.total_profit_label = ttk.Label(metrics_frame, text="Total Profit: $0.00")
+        self.total_profit_label.grid(row=0, column=2, padx=20, pady=10, sticky="w")
+
+        self.sharpe_ratio_label = ttk.Label(metrics_frame, text="Sharpe Ratio: N/A")
+        self.sharpe_ratio_label.grid(row=1, column=0, padx=20, pady=10, sticky="w")
+
+        self.max_drawdown_label = ttk.Label(metrics_frame, text="Max Drawdown: 0%")
+        self.max_drawdown_label.grid(row=1, column=1, padx=20, pady=10, sticky="w")
+
+        self.current_capital_label = ttk.Label(metrics_frame, text="Current Capital: $10,000")
+        self.current_capital_label.grid(row=1, column=2, padx=20, pady=10, sticky="w")
+
+        # Chart Frame
+        chart_frame = ttk.LabelFrame(self.performance_tab, text="Performance Chart", padding=10)
+        chart_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Create matplotlib figure
+        self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(12, 8))
+        self.canvas = FigureCanvasTkAgg(self.fig, chart_frame)
+        self.canvas.get_tk_widget().pack(fill="both", expand=True)
+
+        ttk.Button(chart_frame, text="Update Chart", command=self.update_performance_chart).pack(pady=5)
+
+    def execute_ml_trade(self):
+        """Execute ML trade using the integrated engine."""
+        if ENGINE_AVAILABLE and self.dashboard_interface:
+            try:
+                pair = self.pair_var.get()
+                
+                # Find a bot for this pair
+                bot_id = None
+                for bid, bot in self.trading_engine.bots.items():
+                    if bot.pair == pair and bot.status.value == "ACTIVE":
+                        bot_id = bid
+                        break
+                
+                if not bot_id:
+                    # Create a new bot for this pair
+                    bot_name = f"Dashboard Bot {pair}"
+                    bot_id = self.dashboard_interface.create_ml_bot(bot_name, pair)
+                    self.trading_engine.start_bot(bot_id)
+                    print(f"🆕 Created new bot for {pair}")
+                
+                # Get ML prediction
+                prediction = self.dashboard_interface.get_ml_prediction(bot_id)
+                
+                if not prediction:
+                    messagebox.showwarning("Warning", "Unable to get ML prediction. Insufficient data.")
+                    return
+                
+                action = prediction['action']
+                confidence = prediction['confidence']
+                current_price = prediction['current_price']
+                
+                # Check confidence threshold
+                if confidence < self.confidence_threshold.get():
+                    messagebox.showinfo("Low Confidence", 
+                                        f"ML prediction confidence ({confidence:.2f}) below threshold ({self.confidence_threshold.get()}).\n"
+                                        "Trade not executed.")
+                    return
+                
+                # Execute the trade
+                if action == "BUY":
+                    success = self.dashboard_interface.execute_manual_trade(bot_id, "BUY")
+                elif action == "SELL":
+                    success = self.dashboard_interface.execute_manual_trade(bot_id, "SELL")
+                else:
+                    messagebox.showinfo("ML Decision", "ML model recommends HOLD. No trade executed.")
+                    return
+                
+                if success:
+                    messagebox.showinfo("Trade Executed", 
+                                        f"🎯 ML Trade Executed Successfully!\n\n"
+                                        f"Action: {action}\n"
+                                        f"Price: ${current_price:.2f}\n"
+                                        f"Confidence: {confidence:.2f}\n"
+                                        f"Pair: {pair}")
+                    self.update_dashboard()
+                else:
+                    messagebox.showerror("Trade Failed", "Failed to execute ML trade.")
+                    
+            except Exception as e:
+                logging.error(f"Error executing ML trade: {e}")
+                messagebox.showerror

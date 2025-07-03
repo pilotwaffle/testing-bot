@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Bot Chat</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="chat-container-full"> {# Use a different class for full page chat #}
+        <a href="/" class="back-button">← Back to Dashboard</a>
+        <div class="chat-header">
+            <h1>Chat with Trading Bot</h1>
+            <p>Direct conversation with your AI trading assistant</p>
+        </div>
+        <div class="chat-messages-full" id="chat-messages">
+            <div class="message bot-message">
+                <strong>Bot:</strong> Hello! I'm your trading assistant. Ask me about status, positions, training models, or type 'help' for commands.
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <input type="text" id="chat-input" class="chat-input"
+                   placeholder="Type your message..." onkeypress="handleEnter(event)" autofocus>
+            <button class="send-button" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script src="/static/js/chat.js"></script>
+</body>
+</html>

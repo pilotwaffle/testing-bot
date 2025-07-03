@@ -1,0 +1,638 @@
+<!--
+File: E:\Trade Chat Bot\G Trading Bot\templates\index.html
+Location: E:\Trade Chat Bot\G Trading Bot\templates\index.html
+
+🚀 Elite Trading Bot V3.0 - Industrial Dashboard HTML Template
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Trading Bot V3.0 - Industrial Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="header-content">
+            <div class="logo-section">
+                <i class="fas fa-robot"></i>
+                <h1>Elite Trading Bot V3.0</h1>
+                <span class="status-indicator" id="connectionStatus">CONNECTED</span>
+            </div>
+            <div class="header-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Portfolio Value</span>
+                    <span class="stat-value" id="headerPortfolioValue">$0.00</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Daily P&L</span>
+                    <span class="stat-value" id="headerDailyPnL">$0.00</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Active Strategies</span>
+                    <span class="stat-value" id="headerActiveStrategies">0</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="emergency-stop" id="emergencyStop">
+                    <i class="fas fa-stop-circle"></i>
+                    EMERGENCY STOP
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <main class="dashboard-main">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <div class="nav-item active" data-section="overview">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Overview</span>
+                </div>
+                <div class="nav-item" data-section="trading">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span>Trading</span>
+                </div>
+                <div class="nav-item" data-section="training">
+                    <i class="fas fa-brain"></i>
+                    <span>ML Training</span>
+                </div>
+                <div class="nav-item" data-section="market">
+                    <i class="fas fa-coins"></i>
+                    <span>Market Data</span>
+                </div>
+                <div class="nav-item" data-section="chat">
+                    <i class="fas fa-comments"></i>
+                    <span>AI Assistant</span>
+                </div>
+                <div class="nav-item" data-section="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            
+            <!-- Overview Section -->
+            <section id="overview-section" class="content-section active">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-line"></i> Trading Overview</h2>
+                    <div class="section-actions">
+                        <button class="btn btn-secondary" id="refreshOverview">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overview-grid">
+                    <!-- Portfolio Summary -->
+                    <div class="overview-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-wallet"></i> Portfolio Summary</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="portfolio-stats">
+                                <div class="portfolio-stat">
+                                    <span class="label">Total Value</span>
+                                    <span class="value" id="portfolioTotalValue">$0.00</span>
+                                </div>
+                                <div class="portfolio-stat">
+                                    <span class="label">Available Balance</span>
+                                    <span class="value" id="portfolioAvailable">$0.00</span>
+                                </div>
+                                <div class="portfolio-stat">
+                                    <span class="label">In Positions</span>
+                                    <span class="value" id="portfolioInPositions">$0.00</span>
+                                </div>
+                                <div class="portfolio-stat">
+                                    <span class="label">Today's P&L</span>
+                                    <span class="value pnl" id="portfolioDailyPnL">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Strategies -->
+                    <div class="overview-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-cogs"></i> Active Strategies</h3>
+                        </div>
+                        <div class="card-content">
+                            <div id="activeStrategiesOverview" class="strategies-list">
+                                <!-- Dynamic content -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Metrics -->
+                    <div class="overview-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-bar"></i> Performance</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="performance-metrics">
+                                <div class="metric">
+                                    <span class="metric-label">Win Rate</span>
+                                    <span class="metric-value" id="overviewWinRate">0%</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Total Trades</span>
+                                    <span class="metric-value" id="overviewTotalTrades">0</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Profit Factor</span>
+                                    <span class="metric-value" id="overviewProfitFactor">0.0</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Max Drawdown</span>
+                                    <span class="metric-value" id="overviewMaxDrawdown">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Market Summary -->
+                    <div class="overview-card full-width">
+                        <div class="card-header">
+                            <h3><i class="fas fa-globe"></i> Market Summary</h3>
+                        </div>
+                        <div class="card-content">
+                            <div id="marketSummaryOverview" class="market-summary">
+                                <!-- Dynamic content -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Trading Section -->
+            <section id="trading-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-exchange-alt"></i> Trading Control Center</h2>
+                    <div class="trading-status">
+                        <span class="status-label">Status:</span>
+                        <span class="status-value" id="tradingStatusIndicator">STOPPED</span>
+                    </div>
+                </div>
+
+                <div class="trading-grid">
+                    <!-- Trading Controls -->
+                    <div class="trading-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-play-circle"></i> Trading Controls</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="control-group">
+                                <label for="tradingMode">Trading Mode</label>
+                                <select id="tradingMode" class="form-select">
+                                    <option value="paper">Paper Trading</option>
+                                    <option value="live">Live Trading</option>
+                                </select>
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="riskLevel">Risk Level</label>
+                                <select id="riskLevel" class="form-select">
+                                    <option value="conservative">Conservative</option>
+                                    <option value="moderate">Moderate</option>
+                                    <option value="aggressive">Aggressive</option>
+                                </select>
+                            </div>
+
+                            <div class="control-group">
+                                <label for="maxPositions">Max Positions</label>
+                                <input type="number" id="maxPositions" class="form-input" value="5" min="1" max="20">
+                            </div>
+
+                            <div class="button-group">
+                                <button class="btn btn-success" id="startTrading">
+                                    <i class="fas fa-play"></i> Start Trading
+                                </button>
+                                <button class="btn btn-danger" id="stopTrading">
+                                    <i class="fas fa-stop"></i> Stop Trading
+                                </button>
+                                <button class="btn btn-warning" id="pauseTrading">
+                                    <i class="fas fa-pause"></i> Pause
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Strategy Management -->
+                    <div class="trading-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-layer-group"></i> Strategy Management</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="strategy-selection">
+                                <div class="control-group">
+                                    <label for="strategySelect">Available Strategies</label>
+                                    <select id="strategySelect" class="form-select">
+                                        <option value="">Select Strategy...</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="control-group">
+                                    <label for="strategySymbol">Trading Pair</label>
+                                    <select id="strategySymbol" class="form-select">
+                                        <option value="BTC/USDT">BTC/USDT</option>
+                                        <option value="ETH/USDT">ETH/USDT</option>
+                                        <option value="SOL/USDT">SOL/USDT</option>
+                                        <option value="BNB/USDT">BNB/USDT</option>
+                                    </select>
+                                </div>
+
+                                <div class="control-group">
+                                    <label for="positionSize">Position Size (%)</label>
+                                    <input type="range" id="positionSize" class="form-range" min="1" max="25" value="5">
+                                    <span class="range-value" id="positionSizeValue">5%</span>
+                                </div>
+
+                                <button class="btn btn-primary full-width" id="deployStrategy">
+                                    <i class="fas fa-rocket"></i> Deploy Strategy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Positions -->
+                    <div class="trading-card full-width">
+                        <div class="card-header">
+                            <h3><i class="fas fa-list"></i> Active Positions</h3>
+                            <button class="btn btn-secondary btn-small" id="refreshPositions">
+                                <i class="fas fa-sync"></i>
+                            </button>
+                        </div>
+                        <div class="card-content">
+                            <div class="positions-table-container">
+                                <table class="positions-table" id="positionsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Symbol</th>
+                                            <th>Strategy</th>
+                                            <th>Side</th>
+                                            <th>Size</th>
+                                            <th>Entry Price</th>
+                                            <th>Current Price</th>
+                                            <th>P&L</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Dynamic content -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ML Training Section -->
+            <section id="training-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-brain"></i> Machine Learning Training Center</h2>
+                    <div class="section-actions">
+                        <button class="btn btn-secondary" id="refreshModels">
+                            <i class="fas fa-sync"></i> Refresh Models
+                        </button>
+                    </div>
+                </div>
+
+                <div class="training-grid">
+                    <!-- Model Selection -->
+                    <div class="training-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-robot"></i> Model Training</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="control-group">
+                                <label for="modelType">Model Type</label>
+                                <select id="modelType" class="form-select">
+                                    <option value="lorentzian_classifier">Lorentzian Classifier</option>
+                                    <option value="neural_network">Neural Network</option>
+                                    <option value="random_forest">Random Forest</option>
+                                    <option value="xgboost">XGBoost</option>
+                                </select>
+                            </div>
+
+                            <div class="control-group">
+                                <label for="trainingSymbol">Training Symbol</label>
+                                <select id="trainingSymbol" class="form-select">
+                                    <option value="BTC/USDT">BTC/USDT</option>
+                                    <option value="ETH/USDT">ETH/USDT</option>
+                                    <option value="SOL/USDT">SOL/USDT</option>
+                                </select>
+                            </div>
+
+                            <div class="control-group">
+                                <label for="timeframe">Timeframe</label>
+                                <select id="timeframe" class="form-select">
+                                    <option value="1m">1 Minute</option>
+                                    <option value="5m">5 Minutes</option>
+                                    <option value="15m">15 Minutes</option>
+                                    <option value="1h">1 Hour</option>
+                                    <option value="4h">4 Hours</option>
+                                </select>
+                            </div>
+
+                            <div class="control-group">
+                                <label for="trainingPeriod">Training Period (Days)</label>
+                                <input type="number" id="trainingPeriod" class="form-input" value="30" min="7" max="365">
+                            </div>
+
+                            <button class="btn btn-primary full-width" id="startTraining">
+                                <i class="fas fa-play"></i> Start Training
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Training Progress -->
+                    <div class="training-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-line"></i> Training Progress</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="progress-container">
+                                <div class="progress-info">
+                                    <span id="trainingStatus">Ready to train</span>
+                                    <span id="trainingProgress">0%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="progressFill"></div>
+                                </div>
+                            </div>
+
+                            <div class="training-metrics" id="trainingMetrics">
+                                <div class="metric">
+                                    <span class="metric-label">Accuracy</span>
+                                    <span class="metric-value" id="modelAccuracy">--</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Loss</span>
+                                    <span class="metric-value" id="modelLoss">--</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Epoch</span>
+                                    <span class="metric-value" id="currentEpoch">--</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">ETA</span>
+                                    <span class="metric-value" id="trainingETA">--</span>
+                                </div>
+                            </div>
+
+                            <div class="training-log" id="trainingLog">
+                                <div class="log-header">Training Log</div>
+                                <div class="log-content" id="logContent">
+                                    Ready to start training...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Model Management -->
+                    <div class="training-card full-width">
+                        <div class="card-header">
+                            <h3><i class="fas fa-database"></i> Model Management</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="models-table-container">
+                                <table class="models-table" id="modelsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Model Name</th>
+                                            <th>Type</th>
+                                            <th>Symbol</th>
+                                            <th>Accuracy</th>
+                                            <th>Last Trained</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Dynamic content -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Market Data Section -->
+            <section id="market-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-coins"></i> Live Market Data</h2>
+                    <div class="section-actions">
+                        <button class="btn btn-secondary" id="refreshMarket">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                        <select id="marketCurrency" class="form-select">
+                            <option value="usd">USD</option>
+                            <option value="eur">EUR</option>
+                            <option value="btc">BTC</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="market-grid">
+                    <!-- Top 10 Cryptocurrencies -->
+                    <div class="market-card full-width">
+                        <div class="card-header">
+                            <h3><i class="fas fa-trophy"></i> Top 10 Cryptocurrencies</h3>
+                            <div class="last-update">
+                                Last Update: <span id="marketLastUpdate">--</span>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="crypto-grid" id="cryptoGrid">
+                                <!-- Dynamic content -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Market Overview -->
+                    <div class="market-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-pie"></i> Market Overview</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="market-stats">
+                                <div class="stat">
+                                    <span class="stat-label">Total Market Cap</span>
+                                    <span class="stat-value" id="totalMarketCap">$0</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">24h Volume</span>
+                                    <span class="stat-value" id="totalVolume">$0</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">BTC Dominance</span>
+                                    <span class="stat-value" id="btcDominance">0%</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Market Sentiment</span>
+                                    <span class="stat-value" id="marketSentiment">Neutral</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Watchlist -->
+                    <div class="market-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-star"></i> Watchlist</h3>
+                            <button class="btn btn-secondary btn-small" id="addToWatchlist">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="card-content">
+                            <div class="watchlist" id="watchlist">
+                                <!-- Dynamic content -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chat Section -->
+            <section id="chat-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-comments"></i> AI Assistant (Gemini)</h2>
+                    <div class="chat-status">
+                        <span class="status-indicator" id="geminiStatus">READY</span>
+                    </div>
+                </div>
+
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message system-message">
+                            <div class="message-content">
+                                <i class="fas fa-robot"></i>
+                                <span>Hello! I'm your AI trading assistant powered by Gemini. Ask me about market analysis, trading strategies, or any questions about your portfolio.</span>
+                            </div>
+                            <div class="message-time">System</div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-container">
+                        <div class="input-group">
+                            <input type="text" id="chatInput" class="chat-input" placeholder="Ask me anything about trading, markets, or strategies...">
+                            <button class="btn btn-primary" id="sendMessage">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div class="quick-actions">
+                            <button class="quick-action" data-message="Analyze current market conditions">
+                                <i class="fas fa-chart-line"></i> Market Analysis
+                            </button>
+                            <button class="quick-action" data-message="What are the best trading strategies for today?">
+                                <i class="fas fa-lightbulb"></i> Strategy Suggestions
+                            </button>
+                            <button class="quick-action" data-message="Show portfolio performance summary">
+                                <i class="fas fa-chart-bar"></i> Portfolio Review
+                            </button>
+                            <button class="quick-action" data-message="What cryptocurrencies should I watch today?">
+                                <i class="fas fa-eye"></i> Crypto Recommendations
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-cog"></i> Settings & Configuration</h2>
+                </div>
+
+                <div class="settings-grid">
+                    <!-- API Configuration -->
+                    <div class="settings-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-key"></i> API Configuration</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="control-group">
+                                <label for="exchangeSelect">Exchange</label>
+                                <select id="exchangeSelect" class="form-select">
+                                    <option value="kraken">Kraken</option>
+                                    <option value="binance">Binance</option>
+                                    <option value="coinbase">Coinbase Pro</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="apiKey">API Key</label>
+                                <input type="password" id="apiKey" class="form-input" placeholder="Enter API Key">
+                            </div>
+                            <div class="control-group">
+                                <label for="apiSecret">API Secret</label>
+                                <input type="password" id="apiSecret" class="form-input" placeholder="Enter API Secret">
+                            </div>
+                            <button class="btn btn-primary" id="saveApiConfig">
+                                <i class="fas fa-save"></i> Save Configuration
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- System Settings -->
+                    <div class="settings-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-sliders-h"></i> System Settings</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="control-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="enableNotifications" checked>
+                                    <span class="checkmark"></span>
+                                    Enable Notifications
+                                </label>
+                            </div>
+                            <div class="control-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="enableSounds" checked>
+                                    <span class="checkmark"></span>
+                                    Enable Sound Alerts
+                                </label>
+                            </div>
+                            <div class="control-group">
+                                <label for="refreshInterval">Data Refresh Interval (seconds)</label>
+                                <input type="number" id="refreshInterval" class="form-input" value="5" min="1" max="60">
+                            </div>
+                            <div class="control-group">
+                                <label for="theme">Theme</label>
+                                <select id="theme" class="form-select">
+                                    <option value="dark">Dark</option>
+                                    <option value="light">Light</option>
+                                    <option value="auto">Auto</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <div class="loading-text">Loading...</div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

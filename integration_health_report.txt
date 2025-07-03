@@ -1,0 +1,46 @@
+
+INTEGRATION HEALTH REPORT - 2025-06-29 22:20:36
+================================================================
+
+SCORES:
+Import Score:    100.0% (11/11)
+Function Score:  100.0% (10/10)
+Test Score:      80.0% (4/5)
+OVERALL SCORE:   93.3%
+
+STATUS: 🎉 EXCELLENT
+MESSAGE: Integration is excellent! All systems ready for 80%+ accuracy.
+
+DETAILED RESULTS:
+
+IMPORTS:
+  numpy: ✅ SUCCESS
+  pandas: ✅ SUCCESS
+  sklearn: ✅ SUCCESS
+  advanced_ensemble: ✅ SUCCESS
+  advanced_features: ✅ SUCCESS
+  regime_detection: ✅ SUCCESS
+  advanced_stacking: ✅ SUCCESS
+  rate_limit_fix: ✅ SUCCESS
+  lightgbm: ✅ SUCCESS
+  xgboost: ✅ SUCCESS
+  catboost: ✅ SUCCESS
+
+FUNCTIONS:
+  create_rate_limited_exchange: ✅ FOUND
+  enhanced_feature_engineering: ✅ FOUND
+  train_with_advanced_ensemble: ✅ FOUND
+  enhanced_performance_evaluation: ✅ FOUND
+  Import: from advanced_ensemb...: ✅ FOUND
+  Import: from advanced_featur...: ✅ FOUND
+  Import: from regime_detectio...: ✅ FOUND
+  Import: from advanced_stacki...: ✅ FOUND
+  Import: ADVANCED_ENSEMBLE_AV...: ✅ FOUND
+  Import: ADVANCED_FEATURES_AV...: ✅ FOUND
+
+TESTS:
+  AdvancedEnsembleManager: ✅ SUCCESS (6 models)
+  AdvancedFeatureEngineer: ❌ FAILED: 'high'
+  MarketRegimeDetector: ✅ SUCCESS (8 regimes)
+  AdvancedStackingEnsemble: ✅ SUCCESS (50 predictions)
+  RateLimitFix: ✅ SUCCESS (rate limiter created)

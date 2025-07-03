@@ -1,0 +1,57 @@
+{
+    "file_validation": {
+        "dashboard.html": "PASS",
+        "style.css": "PASS",
+        "enhanced-dashboard.js": "PASS",
+        "main.py_endpoints": "FAIL"
+    },
+    "api_tests": [
+        {
+            "endpoint": "/api/portfolio",
+            "method": "GET",
+            "status": "FAIL",
+            "details": "Expected 200, Got 500"
+        },
+        {
+            "endpoint": "/api/chat",
+            "method": "POST",
+            "status": "FAIL",
+            "details": "Expected 200, Got 500",
+            "response": "{\"error\":\"API Error\",\"detail\":\"Internal server error in chat: unhashable type: 'slice'\",\"status_code\":500,\"path\":\"/api/chat\",\"timestamp\":\"2025-07-01T10:44:34.220276\",\"service\":\"Elite Trading Bot V3.0\"}"
+        }
+    ],
+    "performance_tests": {
+        "/api/market-data": {
+            "avg_ms": "2079.6",
+            "range_ms": "2042.5-2209.5"
+        },
+        "/api/portfolio": {
+            "avg_ms": "2056.0",
+            "range_ms": "2040.4-2087.7"
+        },
+        "/health": {
+            "avg_ms": "2287.6",
+            "range_ms": "2047.5-3222.3"
+        }
+    },
+    "concurrent_requests": {
+        "/api/market-data": {
+            "duration_s": "2.09",
+            "successful": 10,
+            "total": 10
+        }
+    },
+    "summary": {
+        "total_tests": 23,
+        "successful_tests": 18,
+        "failed_tests": 5,
+        "success_rate": 78.26086956521739
+    },
+    "failed_list": [
+        "\u2022 main.py endpoint '@app.get(\"/api/market-data\")': Missing",
+        "\u2022 main.py endpoint '@app.post(\"/api/chat\")': Missing",
+        "\u2022 main.py endpoint '@app.get(\"/health\")': Missing",
+        "\u2022 GET /api/portfolio: Expected Status 200, Got 500 - Response: {\"error\":\"Internal server error\",\"path\":\"/api/portfolio\",\"request_id\":\"1751384661736-3120\",\"service\"",
+        "\u2022 POST /api/chat: Expected Status 200, Got 500 - Response: {\"error\":\"API Error\",\"detail\":\"Internal server error in chat: unhashable type: 'slice'\",\"status_code"
+    ]
+}

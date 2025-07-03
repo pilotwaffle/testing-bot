@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industrial Crypto Trading Bot v3.0</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Industrial Crypto Trading Bot v3.0</h1>
+            <p>Enhanced with OctoBot-Tentacles ML Features | All Buttons Working</p>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status {{ 'running' if status == 'RUNNING' else 'stopped' }}">
+                Status: {{ status }}
+            </div>
+            <div>
+                ML Models: {{ ml_status|length }} trained | Strategies: {{ active_strategies|length }} active | AI: {{ "🤖 Enabled" if ai_enabled else "📝 Basic" }}
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="card">
+            <h3>Portfolio Performance</h3>
+            <div class="metrics">
+                <div class="metric">
+                    <h4>Total Value</h4>
+                    <p class="positive">${{ "%.2f"|format(metrics.total_value) }}</p>
+                </div>
+                <div class="metric">
+                    <h4>Cash Balance</h4>
+                    <p>${{ "%.2f"|format(metrics.cash_balance) }}</p>
+                </div>
+                <div class="metric">
+                    <h4>Unrealized P&L</h4>
+                    <p class="{{ 'positive' if metrics.unrealized_pnl >= 0 else 'negative' }}">${{ "%.2f"|format(metrics.unrealized_pnl) }}</p>
+                </div>
+                <div class="metric">
+                    <h4>Total Profit</h4>
+                    <p class="{{ 'positive' if metrics.total_profit >= 0 else 'negative' }}">${{ "%.2f"|format(metrics.total_profit) }}</p>
+                </div>
+                <div class="metric">
+                    <h4>Open Positions</h4>
+                    <p>{{ metrics.num_positions }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trading Controls -->
+        <div class="card">
+            <h3>Trading Controls</h3>
+            <button class="button success" onclick="startTrading()">Start Trading</button>
+            <button class="button danger" onclick="stopTrading()">Stop Trading</button>
+            <button class="button" onclick="getStatus()">Get Status</button>
+            <button class="button" onclick="getPositions()">View Positions</button>
+            <button class="button" onclick="getMarketData()">Market Data</button>
+            <div class="response-display" id="trading-response">
+                Click any button above to see real-time responses!
+            </div>
+        </div>
+
+        <!-- Advanced ML Training (OctoBot-Tentacles Inspired) -->
+        <div class="ml-section">
+            <h3>Advanced ML Training (OctoBot-Tentacles Features)</h3>
+            <p>Train sophisticated models inspired by OctoBot's ML capabilities:</p>
+
+            <!-- ML System Test -->
+            <div style="margin-bottom: 15px;">
+                <button class="button warning" onclick="testMLSystem()">Test ML System</button>
+                <div class="response-display" id="ml-test-response">Click to test ML system functionality...</div>
+            </div>
+
+            <!-- ML Models Training Section -->
+            <div class="ml-models">
+                {% for model_key, info in ml_status.items() %}
+                <div class="ml-model">
+                    <h4>{{ info.model_type if info.model_type else model_key.replace('_', ' ').title() }}</h4>
+                    <p><small>{{ info.description }}</small></p>
+                    <p><strong>Status:</strong> Trained on {{ info.last_trained|default('N/A') }}</p>
+                    <p><strong>Performance:</strong> {{ info.metric_name|default('N/A') }}: {{ info.metric_value_fmt|default('N/A') }}</p>
+                    <p><strong>Training Samples:</strong> {{ info.training_samples|default('N/A') }}</p>
+                </div>
+                {% else %}
+                <!-- Manual training options if no models are detected -->
+                <div class="ml-model">
+                    <h4>Lorentzian Classifier</h4>
+                    <p><small>k-NN with Lorentzian distance, using RSI, Williams %R, CCI, ADX features</small></p>
+                    <select id="lorentzian-symbol">
+                        {% for symbol in symbols %}
+                        <option value="{{ symbol }}">{{ symbol }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="button" onclick="trainModel('lorentzian', 'lorentzian-symbol', 'lorentzian-response')">Train Lorentzian</button>
+                    <div class="response-display" id="lorentzian-response">Ready to train...</div>
+                </div>
+
+                <div class="ml-model">
+                    <h4>Neural Network</h4>
+                    <p><small>Deep MLP for price prediction with technical indicators and volume analysis</small></p>
+                    <select id="neural-symbol">
+                        {% for symbol in symbols %}
+                        <option value="{{ symbol }}">{{ symbol }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="button" onclick="trainModel('neural_network', 'neural-symbol', 'neural-response')">Train Neural Net</button>
+                    <div class="response-display" id="neural-response">Ready to train...</div>
+                </div>
+
+                <div class="ml-model">
+                    <h4>Social Sentiment</h4>
+                    <p><small>NLP analysis of Reddit, Twitter, Telegram sentiment (simulated)</small></p>
+                    <select id="sentiment-symbol">
+                        {% for symbol in symbols %}
+                        <option value="{{ symbol }}">{{ symbol }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="button" onclick="trainModel('social_sentiment', 'sentiment-symbol', 'sentiment-response')">Train Sentiment</button>
+                    <div class="response-display" id="sentiment-response">Ready to train...</div>
+                </div>
+
+                <div class="ml-model">
+                    <h4>Risk Assessment</h4>
+                    <p><small>Portfolio risk calculation using VaR, CVaR, volatility correlation (simulated)</small></p>
+                    <select id="risk-symbol">
+                        {% for symbol in symbols %}
+                        <option value="{{ symbol }}">{{ symbol }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="button" onclick="trainModel('risk_assessment', 'risk-symbol', 'risk-response')">Train Risk Model</button>
+                    <div class="response-display" id="risk-response">Ready to train...</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Chat Interface -->
+        <div class="card">
+            <h3>Chat with Trading Bot</h3>
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <div><strong>Bot:</strong> Hello! I'm your trading assistant. Type 'help' for commands or 'status' for portfolio info.</div>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" id="chat-input" class="chat-input" placeholder="Type a message..." onkeypress="handleChatEnter(event)">
+                    <button class="button" onclick="sendChatMessage()">Send</button>
+                </div>
+            </div>
+            <p><small>Try: 'status', 'help', 'models', 'positions', 'market', 'start', 'stop'</small></p>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="card">
+            <h3>Quick Access</h3>
+            <a href="/chat" class="button">Full Chat Interface</a>
+            <a href="/api-test" class="button">API Testing</a>
+            <button class="button warning" onclick="window.location.reload()">Refresh Dashboard</button>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

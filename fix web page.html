@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Elite Trading Bot V3.0</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0; font-family: 'Segoe UI', sans-serif; background: linear-gradient(120deg, #1e1a2a 0%, #001f3f 100%);
+      color: #fff;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    .container { display: flex; height: 100vh; }
+    .sidebar {
+      width: 230px; background: linear-gradient(180deg,#00d4ff 0%,#ff00ff 100%);
+      display: flex; flex-direction: column; align-items: stretch; padding: 24px 0; box-shadow: 4px 0 24px #0004;
+      z-index: 1;
+    }
+    .nav-btn {
+      padding: 16px 24px; margin: 6px 18px; background: rgba(255,255,255,0.08);
+      border: none; border-radius: 24px; color: #fff; font-size:1.1em; font-weight: 600;
+      letter-spacing: 1px; cursor: pointer; transition: all .15s;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .nav-btn.active, .nav-btn:hover {
+      background: linear-gradient(90deg,#00d4ff 0,#ff00ff 100%); color: #222;
+      box-shadow: 0 2px 12px #ff00ff44;
+      transform: scale(1.04);
+    }
+
+    .main-content {
+      flex: 1; padding: 0 0 0 0; overflow-y: auto; position: relative;
+      background: rgba(30,26,42,0.8); backdrop-filter: blur(6px);
+      display: flex; flex-direction: column; height: 100vh;
+    }
+    section { display: none; padding: 36px 48px 36px 48px; min-height: 100vh; }
+    section.active { display: block; animation: fadeIn .5s; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(40px);} to {opacity:1; transform:translateY(0);} }
+
+    h1, h2, h3 { font-weight: 800; margin-bottom: 10px; }
+    .card-group, .bot-group, .market-group { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 32px; }
+    .stat-card, .bot-card, .market-card {
+      background: rgba(255,255,255,0.08); border-radius: 20px; padding: 24px;
+      box-shadow: 0 2px 8px #0002; min-width: 210px; min-height: 120px;
+      color: #fff; font-size: 1.1em;
+      display: flex; flex-direction: column; gap: 10px;
+      transition: box-shadow .2s;
+      position: relative;
+    }
+    .stat-card { flex: 1; align-items: center; text-align: center; }
+    .bot-card { width: 320px; }
+    .market-card { width: 220px; align-items: flex-start; }
+    .card-title { font-size: 1.2em; font-weight: bold; }
+    .card-value { font-size: 2em; font-weight: 900; margin-top: 6px; }
+    .dropdown, select, input[type="number"] {
+      padding: 6px 12px; border-radius: 8px; border: none;
+      background: #222c; color: #fff; font-size: 1em;
+      margin: 4px 0;
+      width: 100%;
+    }
+    .bot-controls, .bot-summary, .market-controls { display: flex; gap: 8px; margin-bottom: 8px;}
+    .bot-actions { display: flex; gap: 10px; margin-top: 8px;}
+    .btn {
+      padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer;
+      font-weight: bold; background: #00d4ff; color: #222;
+      transition: background .2s, color .2s, box-shadow .2s;
+    }
+    .btn.stop { background: #ff00ff; color: #fff; }
+    .btn.begin { background: #12ff8a; color: #222; }
+    .btn.end { background: #ff0033; color: #fff; }
+    .btn:hover { background: #fff; color: #001f3f; }
+    .section-title { font-size: 2em; margin-bottom: 24px; }
+
+    /* AI Chat */
+    .chat-container { background: rgba(255,255,255,0.06); border-radius: 18px; padding: 24px; width: 520px; max-width: 90vw;}
+    .chat-history { max-height: 260px; overflow-y: auto; margin-bottom: 18px; }
+    .chat-msg { margin-bottom: 10px; }
+    .chat-msg.user { text-align: right; color: #00d4ff; }
+    .chat-msg.bot { text-align: left; color: #ff00ff; }
+    .chat-input-row { display: flex; gap: 10px; }
+    .chat-input { flex: 1; padding: 8px 12px; border-radius: 10px; border: none; }
+    .chat-send { background: #ff00ff; color: #fff; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold;}
+    .chat-send:hover { background: #00d4ff; color: #222; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; background: #222; }
+    ::-webkit-scrollbar-thumb { background: #00d4ff88; border-radius: 8px; }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .container { flex-direction: column; }
+      .sidebar { flex-direction: row; width: 100vw; height: 70px; padding: 0; }
+      .main-content { padding: 0 8px; }
+      section { padding: 18px 5vw; }
+      .card-group, .bot-group, .market-group { flex-direction: column; gap: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar" id="sidebar">
+      <button class="nav-btn active" data-section="overview">📊 Overview</button>
+      <button class="nav-btn" data-section="trading">🤖 Trading Bots</button>
+      <button class="nav-btn" data-section="training">🧠 AI Training</button>
+      <button class="nav-btn" data-section="market">📈 Market Data</button>
+      <button class="nav-btn" data-section="chat">💬 AI Chat</button>
+      <button class="nav-btn" data-section="settings">⚙️ Settings</button>
+    </div>
+    <div class="main-content">
+      <!-- Overview -->
+      <section id="overview" class="active">
+        <div class="section-title">Dashboard Overview</div>
+        <div class="card-group">
+          <div class="stat-card">
+            <div class="card-title">Portfolio Value</div>
+            <div class="card-value" id="portfolio-value">$265,710</div>
+          </div>
+          <div class="stat-card">
+            <div class="card-title">Today's P&L</div>
+            <div class="card-value" id="today-pnl">+$2,320</div>
+          </div>
+          <div class="stat-card">
+            <div class="card-title">Active Trades</div>
+            <div class="card-value" id="active-trades">7</div>
+          </div>
+          <div class="stat-card">
+            <div class="card-title">Success Rate</div>
+            <div class="card-value" id="success-rate">83.2%</div>
+          </div>
+        </div>
+        <h3 style="margin-top:36px;">Recent Trades</h3>
+        <table style="width: 100%; background:rgba(255,255,255,0.04); border-radius:12px;">
+          <thead>
+            <tr style="color:#00d4ff;">
+              <th>Bot</th><th>Pair</th><th>P&L</th><th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="recent-trades">
+            <tr><td>Grid Alpha</td><td>BTC/USD</td><td style="color:#12ff8a;">+0.82%</td><td>10:31 AM</td></tr>
+            <tr><td>ScalpPro</td><td>ETH/USDT</td><td style="color:#ff0033;">-0.11%</td><td>09:56 AM</td></tr>
+            <tr><td>DCA Smart</td><td>SOL/USDC</td><td style="color:#12ff8a;">+1.05%</td><td>09:12 AM</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Trading Bots -->
+      <section id="trading">
+        <div class="section-title">Trading Bots</div>
+        <div class="bot-group" id="bot-group">
+          <!-- Bots will be injected here -->
+        </div>
+      </section>
+
+      <!-- AI Training -->
+      <section id="training">
+        <div class="section-title">AI Training</div>
+        <div class="card-group">
+          <div class="stat-card">
+            <div class="card-title">Total Models Trained</div>
+            <div class="card-value" id="models-trained">18</div>
+          </div>
+          <div class="stat-card">
+            <div class="card-title">Avg. Improvement</div>
+            <div class="card-value" id="avg-improvement">+11.2%</div>
+          </div>
+          <div class="stat-card">
+            <div class="card-title">Avg. Accuracy</div>
+            <div class="card-value" id="avg-accuracy">82.5%</div>
+          </div>
+          <div class="stat-card">
+            <div class="card-title">Avg. Training Time</div>
+            <div class="card-value" id="avg-time">4m 27s</div>
+          </div>
+        </div>
+        <div style="margin:32px 0 20px 0; background:rgba(255,255,255,0.08); border-radius:16px; padding:24px;">
+          <h3>Model Performance Summary</h3>
+          <div id="model-summary">
+            <b>Model:</b> GPT-4<br>
+            <b>Data:</b> 6 months<br>
+            <b>Improvement:</b> <span style="color:#12ff8a;">+8.5%</span><br>
+            <b>Accuracy:</b> 84.3%
+          </div>
+        </div>
+        <form id="training-form" style="max-width:600px; margin-top:20px;">
+          <label>Strategy:
+            <select class="dropdown" id="training-strategy">
+              <option>Scalping</option>
+              <option>Swing Trading</option>
+              <option>Grid Trading</option>
+              <option>Arbitrage</option>
+              <option>Momentum</option>
+              <option>Mean Reversion</option>
+              <option>DCA</option>
+              <option>Trend Following</option>
+              <option>Breakout</option>
+              <option>Range Trading</option>
+              <option>Reversal</option>
+              <option>Statistical Arbitrage</option>
+              <option>Market Making</option>
+              <option>VWAP</option>
+              <option>News-based</option>
+            </select>
+          </label>
+          <label>Model:
+            <select class="dropdown" id="training-model">
+              <option>GPT-4</option>
+              <option>LSTM</option>
+              <option>Transformer</option>
+              <option>Random Forest</option>
+              <option>SVM</option>
+              <option>Ensemble</option>
+              <option>Logistic Regression</option>
+              <option>Gradient Boosting</option>
+            </select>
+          </label>
+          <label>Risk Level:
+            <select class="dropdown" id="training-risk">
+              <option>Low</option>
+              <option>Medium</option>
+              <option>High</option>
+            </select>
+          </label>
+          <label>Training Period:
+            <select class="dropdown" id="training-period">
+              <option>30 days</option>
+              <option>90 days</option>
+              <option>6 months</option>
+              <option>1 year</option>
+            </select>
+          </label>
+          <div style="margin-top:14px;">
+            <button type="button" class="btn begin" onclick="alert('Training started!')">Start Training</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Market Data -->
+      <section id="market">
+        <div class="section-title">Market Data</div>
+        <div class="market-controls">
+          <select class="dropdown" id="market-filter">
+            <option>All</option>
+            <option>USD Pairs</option>
+            <option>USDC Pairs</option>
+            <option>USDT Pairs</option>
+          </select>
+          <input class="dropdown" placeholder="Search coin" style="width:180px;">
+        </div>
+        <div class="market-group" id="market-group">
+          <!-- Market data will be injected here -->
+        </div>
+      </section>
+
+      <!-- AI Chat -->
+      <section id="chat">
+        <div class="section-title">AI Chat</div>
+        <div class="chat-container">
+          <div class="chat-history" id="chat-history">
+            <div class="chat-msg bot">Hello! How can I help you with your trading today?</div>
+          </div>
+          <div class="chat-input-row">
+            <input class="chat-input" id="chat-input" placeholder="Type your message...">
+            <button class="chat-send" id="chat-send">Send</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Settings -->
+      <section id="settings">
+        <div class="section-title">Settings</div>
+        <form style="max-width:480px;">
+          <label>Exchange:
+            <select class="dropdown">
+              <option>Binance</option>
+              <option>Coinbase</option>
+              <option>Kraken</option>
+              <option>Bybit</option>
+            </select>
+          </label>
+          <label>API Key: <input class="dropdown" type="text" placeholder="Enter API Key"></label>
+          <label>API Secret: <input class="dropdown" type="password" placeholder="Enter API Secret"></label>
+          <label>Risk Management:
+            <select class="dropdown">
+              <option>Conservative</option>
+              <option>Balanced</option>
+              <option>Aggressive</option>
+            </select>
+          </label>
+          <button class="btn" type="button" style="margin-top:12px;">Save Settings</button>
+        </form>
+      </section>
+    </div>
+  </div>
+  <script>
+    // Navigation logic
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.main-content section').forEach(s => s.classList.remove('active'));
+        const sec = btn.dataset.section;
+        document.getElementById(sec).classList.add('active');
+      });
+    });
+    // Trading Bots - Demo Data
+    const botModels = [
+      "Scalping", "Grid Trading", "DCA", "Arbitrage", "Momentum", "Mean Reversion", "Trend Following", "Breakout"
+    ];
+    const tradingPairs = ["USD", "USDC", "USDT"];
+    const botGroup = document.getElementById('bot-group');
+    for(let i=0; i<12; i++) {
+      const bot = document.createElement('div');
+      bot.className = 'bot-card';
+      bot.innerHTML = `
+        <div class="card-title">Bot #${i+1} - ${botModels[i % botModels.length]}</div>
+        <div class="bot-controls">
+          <select class="dropdown">${tradingPairs.map(t => `<option>${t}</option>`).join('')}</select>
+          <select class="dropdown">${botModels.map(m => `<option>${m}</option>`).join('')}</select>
+          <input class="dropdown" type="number" min="0" max="100" value="2" style="width:70px" placeholder="Stop Loss %" title="Stop Loss %">
+          <input class="dropdown" type="number" min="0" max="100" value="5" style="width:70px" placeholder="Take Profit %" title="Take Profit %">
+        </div>
+        <div class="bot-actions">
+          <button class="btn begin" onclick="alert('Trade started!')">Begin Trade</button>
+          <button class="btn end" onclick="alert('Trade ended!')">End Trade</button>
+        </div>
+        <div class="bot-summary" style="margin-top:8px;">
+          <span>Total Trades: <b>${Math.floor(Math.random()*200+20)}</b></span>
+          <span>Win%: <b style="color:#12ff8a">${(60+Math.random()*30).toFixed(1)}%</b></span>
+          <span>Today's P&L: <b style="color:#${Math.random()>0.5?'12ff8a':'ff0033'}">${Math.random()>0.5?'+':'-'}$${(Math.random()*400).toFixed(2)}</b></span>
+        </div>
+      `;
+      botGroup.appendChild(bot);
+    }
+    // Market Data - Demo Data
+    const coins = [
+      { name: "Bitcoin", symbol: "BTC" },
+      { name: "Ethereum", symbol: "ETH" },
+      { name: "Solana", symbol: "SOL" },
+      { name: "Avalanche", symbol: "AVAX" },
+      { name: "Cardano", symbol: "ADA" },
+      { name: "XRP", symbol: "XRP" },
+      { name: "Dogecoin", symbol: "DOGE" },
+      { name: "Polkadot", symbol: "DOT" },
+      { name: "Arbitrum", symbol: "ARB" },
+      { name: "Polygon", symbol: "MATIC" }
+    ];
+    const marketPairs = ["USD", "USDC", "USDT"];
+    const marketGroup = document.getElementById('market-group');
+    coins.forEach((coin, idx) => {
+      const card = document.createElement('div');
+      card.className = 'market-card';
+      card.innerHTML = `
+        <div style="font-weight: bold; font-size:1.3em;">${coin.symbol}</div>
+        <div style="color:#00d4ff;">${coin.name}</div>
+        <select class="dropdown">${marketPairs.map(p => `<option>${coin.symbol}/${p}</option>`).join('')}</select>
+        <div style="font-size:1.4em; margin:8px 0;">$${(Math.random()*70000+1000).toFixed(2)}</div>
+        <button class="btn" style="width:100%;" onclick="alert('Trade ${coin.symbol} now!')">Trade</button>
+      `;
+      marketGroup.appendChild(card);
+    });
+
+    // AI Chat logic (simple demo)
+    const chatHistory = document.getElementById('chat-history');
+    document.getElementById('chat-send').onclick = sendMsg;
+    document.getElementById('chat-input').addEventListener('keydown', function(e){
+      if(e.key==='Enter'){ sendMsg(); }
+    });
+    function sendMsg() {
+      const input = document.getElementById('chat-input');
+      const msg = input.value.trim();
+      if(!msg) return;
+      const userDiv = document.createElement('div');
+      userDiv.className = 'chat-msg user';
+      userDiv.textContent = msg;
+      chatHistory.appendChild(userDiv);
+      input.value='';
+      setTimeout(()=>{
+        const botDiv = document.createElement('div');
+        botDiv.className = 'chat-msg bot';
+        botDiv.textContent = '🤖 ' + [
+          "Trading is going well today!",
+          "Bot Alpha just closed a profitable trade.",
+          "Let me know if you want to train a new model.",
+          "Here's a summary of your portfolio..."
+        ][Math.floor(Math.random()*4)];
+        chatHistory.appendChild(botDiv);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+      }, 900);
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+  </script>
+</body>
+</html>

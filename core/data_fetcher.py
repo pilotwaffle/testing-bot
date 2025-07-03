@@ -1,296 +1,497 @@
-# core/data_fetcher.py
+import ccxt
+import ccxt.pro as ccxtpro
+import os
+import pandas as pd
+import numpy as np
 import asyncio
 import logging
+from datetime import datetime, timedelta
+from pathlib import Path
+import time
 import random
-from datetime import datetime
-from typing import Dict, Any, Callable, Awaitable, TYPE_CHECKING, Optional
-import numpy as np
-import pandas as pd
-import os 
+from typing import Dict, List, Optional, Tuple, Any
+import pickle
+import requests
+import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Import ccxt exceptions for specific error handling
-import ccxt
-import ccxt.pro # Ensure ccxt.pro is imported for async operations
+# Define custom exceptions for better error handling
+class DataFetcherError(Exception):
+    """Base exception for DataFetcher errors."""
+    pass
 
-from core.config import settings
+class RateLimitError(DataFetcherError):
+    """Raised when an API rate limit is hit."""
+    pass
 
-logger = logging.getLogger(__name__)
+class ExchangeConnectionError(DataFetcherError):
+    """Raised when there's an issue connecting to the exchange."""
+    pass
 
-# --- Global Flags for CCXT Library Availability ---
-_CCXT_PRO_AVAILABLE_GLOBAL = False
-_CCXT_SYNC_AVAILABLE_GLOBAL = False
+class DataFetcher:
+    def __init__(self, exchange_name: str = 'kraken', cache_dir: str = 'data/cache',
+                 trading_engine: Optional[Any] = None): # ADDED trading_engine parameter
+        self.exchange_name = exchange_name
+        self.cache_dir = Path(cache_dir)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
 
-try:
-    import ccxt
-    _CCXT_SYNC_AVAILABLE_GLOBAL = True
-    logger.info("CCXT (synchronous) library loaded.")
-except ImportError:
-    logger.warning("CCXT (synchronous) library not found. Historical data fetches might be limited.")
-    
-try:
-    import ccxt.pro
-    _CCXT_PRO_AVAILABLE_GLOBAL = True
-    logger.info("CCXT Pro (asynchronous) library loaded.")
-except ImportError:
-    logger.warning("CCXT Pro (asynchronous) library not found. Real-time data feed will use demo data.")
+        self.logger = logging.getLogger(__name__)
 
-# For static type checkers, to acknowledge the dynamically set attributes
-if TYPE_CHECKING:
-    import builtins
-    builtins.CCXT_PRO_AVAILABLE = _CCXT_PRO_AVAILABLE_GLOBAL
-    builtins.CCXT_SYNC_AVAILABLE = _CCXT_SYNC_AVAILABLE_GLOBAL
+        self.trading_engine = trading_engine # Store the trading engine instance
 
+        # Initialize exchanges
+        self.sync_exchange = None
+        self.async_exchange = None
+        self._initialize_exchanges()
 
-class CryptoDataFetcher:
-    """Fetches real-time and historical crypto data from exchanges."""
-    def __init__(self):
-        self._crypto_ex_sync: Optional[ccxt.Exchange] = None
-        self._crypto_ex_async: Optional[ccxt.pro.Exchange] = None
-        self.running_feed = False
+        # Data validation parameters
+        self.min_required_samples = 500
+        self.max_gap_tolerance = 0.05  # 5% missing data tolerance
 
-        # Flags to track successful market loading for sync/async clients
-        self._markets_loaded_async = False 
-        self._markets_loaded_sync = False # Corrected: Flag for synchronous client markets
+        # Rate limiting configuration (per request, additional to ccxt's internal)
+        self.request_delay_sec = 0.5 # A small delay between individual requests
+        self.last_request_time = 0
 
-        # Symbols to fetch for the real-time feed (from settings)
-        self.symbols = settings.DEFAULT_TRAINING_SYMBOLS
-        self.exchange_id = settings.DEFAULT_EXCHANGE
+        self.logger.info(f"Data Fetcher initialized with {exchange_name}")
 
-        # CACHING SETUP (Ensures data/ohlcv_cache directory exists)
-        current_script_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root_dir = os.path.abspath(os.path.join(current_script_dir, '..'))
-        self.cache_dir = os.path.join(project_root_dir, 'data', 'ohlcv_cache')
-        os.makedirs(self.cache_dir, exist_ok=True)
-        logger.info(f"OHLCV data cache directory: {self.cache_dir}")
+    def _initialize_exchanges(self):
+        """Initialize both sync and async exchange instances"""
+        try:
+            # IMPORTANT: Replace with your actual Kraken API keys.
+            # Leaving them empty will likely cause authentication errors for private endpoints.
+            # For demonstration, placeholders are used.
+            api_key = os.getenv('KRAKEN_API_KEY', '') # Recommended: Use environment variables
+            secret = os.getenv('KRAKEN_SECRET', '') # Recommended: Use environment variables
 
-        # --- Initialize synchronous CCXT client for historical data ---
-        if _CCXT_SYNC_AVAILABLE_GLOBAL:
-            try:
-                sync_exchange_class = getattr(ccxt, self.exchange_id, None)
-                if sync_exchange_class:
-                    self._crypto_ex_sync = sync_exchange_class({
-                        'enableRateLimit': True, 
-                        'timeout': 15000,        
-                    })
-                    logger.info(f"Initialized CCXT (sync) {self.exchange_id} for historical data.")
-                else:
-                    logger.warning(f"CCXT (sync) exchange '{self.exchange_id}' not found. "
-                                   "Historical data fetching may fall back to demo.")
-            except Exception as e:
-                logger.error(f"Failed to instantiate CCXT (sync) client: {e}.", exc_info=True)
-                self._crypto_ex_sync = None
+            # Sync exchange
+            exchange_class = getattr(ccxt, self.exchange_name)
+            self.sync_exchange = exchange_class({
+                'apiKey': api_key,
+                'secret': secret,
+                'timeout': 30000,
+                'enableRateLimit': True,
+                'rateLimit': 2000,   # Increased rate limit to 2000ms (2 seconds)
+                                     # to be more conservative with Kraken's limits
+            })
 
+            # Async exchange
+            async_exchange_class = getattr(ccxtpro, self.exchange_name)
+            self.async_exchange = async_exchange_class({
+                'apiKey': api_key,
+                'secret': secret,
+                'timeout': 30000,
+                'enableRateLimit': True,
+                'rateLimit': 2000, # Increased rate limit to 2000ms (2 seconds)
+            })
 
-        # --- Initialize asynchronous CCXT Pro client for real-time feed ---
-        if _CCXT_PRO_AVAILABLE_GLOBAL:
-            try:
-                async_exchange_class = getattr(ccxt.pro, self.exchange_id, None)
-                if async_exchange_class:
-                    self._crypto_ex_async = async_exchange_class({
-                        'enableRateLimit': True,
-                        'timeout': 15000,        
-                    })
-                    logger.info(f"Initialized CCXT Pro (async) {self.exchange_id} for real-time feed.")
-                else:
-                    logger.warning(f"CCXT Pro (async) exchange '{self.exchange_id}' not found. "
-                                   "Real-time feed will use demo data.")
-            except Exception as e:
-                logger.error(f"Failed to instantiate CCXT Pro (async) client: {e}. "
-                             "Real-time feed will use demo data.", exc_info=True)
-                self._crypto_ex_async = None 
+            self.logger.info("Exchanges initialized successfully")
+
+        except AttributeError:
+            # Raised if exchange_name is not a valid ccxt exchange
+            raise ExchangeConnectionError(f"Exchange '{self.exchange_name}' not found in CCXT. Check name or installation.")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize exchanges: {e}")
+            raise ExchangeConnectionError(f"Failed to initialize exchanges: {e}")
+
+    def _rate_limit_local_pause(self):
+        """Apply a local rate limiting pause between individual requests"""
+        current_time = time.time()
+        time_since_last = current_time - self.last_request_time
+
+        if time_since_last < self.request_delay_sec:
+            sleep_time = self.request_delay_sec - time_since_last
+            time.sleep(sleep_time)
+
+        self.last_request_time = time.time()
+
+    def _get_cache_filename(self, symbol: str, timeframe: str, limit: int,
+                           start_date: Optional[datetime] = None) -> Path:
+        """Generate cache filename"""
+        symbol_clean = symbol.replace('/', '_').lower()
+
+        if start_date:
+            date_str = start_date.strftime('%Y%m%d')
+            return self.cache_dir / f"{symbol_clean}_{timeframe}_{limit}_{date_str}.pkl"
         else:
-            logger.warning("CCXT Pro (async) is not available. Real-time feed will use demo data.")
+            return self.cache_dir / f"{symbol_clean}_{timeframe}_{limit}_latest.pkl"
 
-        if not self._crypto_ex_sync and not self._crypto_ex_async:
-            logger.error("No CCXT exchanges initialized. All data fetching will use demo data.")
+    def _is_cache_valid(self, cache_file: Path, max_age_hours: int = 1) -> bool:
+        """Check if cached data is still valid"""
+        if not cache_file.exists():
+            return False
 
+        file_age = datetime.now() - datetime.fromtimestamp(cache_file.stat().st_mtime)
+        return file_age < timedelta(hours=max_age_hours)
 
-    async def fetch_ohlcv(self, symbol: str = "BTC/USDT", timeframe: str = "1h", limit: int = 500) -> pd.DataFrame:
+    def fetch_ohlcv_bulk(self, symbol: str, timeframe: str,
+                         total_candles: int = 5000, use_cache: bool = True,
+                         max_retries: int = 5, retry_delay_base: int = 5) -> pd.DataFrame:
         """
-        Fetches historical OHLCV data.
-        Prioritizes cached data, then fetches from exchange (using the synchronous client via asyncio.to_thread),
-        and finally falls back to demo data if fetching fails.
+        Fetch large amounts of OHLCV data using pagination with retry logic for rate limits.
         """
-        normalized_symbol = symbol.replace('/', '_').lower()
-        cache_filename = f"{normalized_symbol}_{timeframe}_{limit}.csv"
-        file_path = os.path.join(self.cache_dir, cache_filename)
+        self.logger.info(f"Fetching {total_candles} candles for {symbol} ({timeframe})")
 
-        # 1. Attempt to load from cache
-        if os.path.exists(file_path):
+        # Check cache first
+        cache_file = self._get_cache_filename(symbol, timeframe, total_candles)
+
+        if use_cache and self._is_cache_valid(cache_file, max_age_hours=6):
             try:
-                df_cached = pd.read_csv(file_path, index_col='timestamp', parse_dates=True)
-                if not df_cached.empty and len(df_cached) >= limit:
-                    logger.info(f"Loaded {len(df_cached)} candles for {symbol} ({timeframe}) from cache: {file_path}")
-                    return df_cached
-                else:
-                    logger.warning(f"Cached data for {symbol} is incomplete or empty. Refetching from exchange.")
+                with open(cache_file, 'rb') as f:
+                    cached_data = pickle.load(f)
+                self.logger.info(f"Loaded {len(cached_data)} candles from cache")
+                return cached_data
             except Exception as e:
-                logger.error(f"Error loading cached data from {file_path}: {e}. Refreshing from exchange.")
+                self.logger.warning(f"Failed to load cache: {e}. Proceeding with live fetch.")
 
-        # 2. If cache failed or not available, try to fetch from exchange (using sync client via to_thread)
-        if self._crypto_ex_sync: # Proceed only if sync client is initialized
-            logger.info(f"Fetching {limit} candles for symbol {symbol} ({timeframe}) from exchange (sync)...")
+        # Load markets
+        if not self.sync_exchange.markets:
             try:
-                # Load markets only if not already loaded for the sync client
-                # Use the custom _markets_loaded_sync flag
-                if not self._markets_loaded_sync: 
-                    await asyncio.to_thread(self._crypto_ex_sync.load_markets)
-                    self._markets_loaded_sync = True # Set flag to True on success
-                    logger.info(f"CCXT (sync) {self.exchange_id} markets loaded successfully.")
+                self.sync_exchange.load_markets()
+            except Exception as e:
+                raise ExchangeConnectionError(f"Failed to load markets: {e}")
 
-                raw_data = await asyncio.to_thread(
-                    self._crypto_ex_sync.fetch_ohlcv,
-                    symbol, timeframe=timeframe, limit=limit
-                )
+        # Calculate timeframe in milliseconds
+        timeframe_ms = self._timeframe_to_ms(timeframe)
 
-                if not raw_data: # If CCXT returns an empty list, it's not a failure, just no data
-                    logger.warning(f"No OHLCV data obtained from exchange for {symbol} ({timeframe}).")
-                    return pd.DataFrame()
+        # Fetch data in chunks
+        all_data = []
+        max_limit = 1000  # Most exchanges limit to 1000 candles per request
 
-                df = pd.DataFrame(raw_data, columns=["timestamp", "open", "high", "low", "close", "volume"])
-                df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-                df.set_index('timestamp', inplace=True)
+        # Calculate how many requests we need
+        # Start from current time and go backwards
+        end_time = int(time.time() * 1000)
 
-                if df.empty:
-                    logger.warning(f"No data after processing for {symbol} ({timeframe}).")
-                    return pd.DataFrame()
-
-                # 3. Cache the fetched data
+        # To fetch total_candles, we might need multiple requests, going backward in time
+        # We start from current_time and fetch chunks backwards until total_candles are accumulated.
+        # This approach ensures we always get the *latest* total_candles.
+        current_data_count = 0
+        while current_data_count < total_candles:
+            retries = 0
+            while retries < max_retries:
                 try:
-                    df.to_csv(file_path, index=True)
-                    logger.info(f"Successfully fetched and cached {len(df)} candles for {symbol} ({timeframe}) to {file_path}")
+                    # Apply local rate limiting before each request
+                    self._rate_limit_local_pause()
+
+                    # Calculate 'since' based on the earliest timestamp in collected data
+                    # If all_data is empty, start from end_time and go back total_candles * timeframe_ms
+                    # Otherwise, fetch from the earliest timestamp already collected.
+                    if not all_data:
+                        since = end_time - total_candles * timeframe_ms
+                    else:
+                        earliest_timestamp_ms = all_data[-1].index.min().value // 1_000_000 # Convert nanoseconds to milliseconds
+                        since = earliest_timestamp_ms - max_limit * timeframe_ms # Go back one chunk from the earliest
+
+                    self.logger.debug(f"Fetching chunk (retry {retries+1}/{max_retries}): "
+                                      f"limit={max_limit} from {datetime.fromtimestamp(since/1000)}")
+
+                    # Fetch data
+                    ohlcv = self.sync_exchange.fetch_ohlcv(
+                        symbol, timeframe, since=since, limit=max_limit
+                    )
+
+                    if not ohlcv:
+                        self.logger.warning(f"No data received for chunk after {retries+1} attempts.")
+                        # If no data is received consistently, break from retries for this chunk
+                        break
+
+                    # Convert to DataFrame
+                    chunk_df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+                    chunk_df['timestamp'] = pd.to_datetime(chunk_df['timestamp'], unit='ms')
+                    chunk_df.set_index('timestamp', inplace=True)
+
+                    all_data.append(chunk_df)
+                    current_data_count += len(chunk_df)
+                    self.logger.debug(f"Fetched {len(chunk_df)} candles. Total collected: {current_data_count}")
+                    break # Break from retry loop, chunk fetched successfully
+
+                except (ccxt.RateLimitExceeded, requests.exceptions.RequestException) as e:
+                    retries += 1
+                    sleep_duration = retry_delay_base * (2 ** (retries - 1)) + random.uniform(0, 1) # Exponential backoff with jitter
+                    self.logger.warning(f"Rate limit hit or request error for {symbol} ({timeframe}): {e}. Retrying in {sleep_duration:.2f} seconds...")
+                    time.sleep(sleep_duration)
+                    if retries >= max_retries:
+                        self.logger.error(f"Failed to fetch chunk for {symbol} ({timeframe}) after {max_retries} retries due to rate limit/request error.")
+                        break # Give up on this chunk after max retries
                 except Exception as e:
-                    logger.error(f"Failed to save fetched data to cache {file_path}: {e}")
-                return df
+                    self.logger.error(f"Unexpected error fetching chunk for {symbol} ({timeframe}): {e}")
+                    break # Break from retry loop for unexpected errors
 
-            except ccxt.NetworkError as e:
-                logger.warning(f"Network error fetching OHLCV data for {symbol} ({timeframe}): {e}. Fallback to demo data.")
-            except ccxt.ExchangeError as e:
-                logger.warning(f"Exchange error fetching OHLCV data for {symbol} ({timeframe}): {e}. Fallback to demo data.")
-            except Exception as e:
-                logger.warning(f"An unexpected error occurred while fetching OHLCV data for {symbol} ({timeframe}): {e}. Fallback to demo data.", exc_info=True)
+            if retries >= max_retries: # If max retries reached for a chunk, try to continue with available data
+                self.logger.warning(f"Skipping further fetching for {symbol} ({timeframe}) due to persistent errors.")
+                break
 
-        # 4. Fallback to demo data if real fetch failed or no sync exchange available
-        logger.info(f"Generating demo OHLCV data for {symbol} (limit={limit}).")
-        return self._generate_demo_ohlcv(symbol, limit)
 
-    def _generate_demo_ohlcv(self, symbol: str, limit: int) -> pd.DataFrame:
-        """Helper to generate synthetic OHLCV data for demo mode."""
-        np.random.seed(42)  # For reproducible demo data
-        dates = pd.date_range(end=datetime.now(), periods=limit, freq='1h') 
-        base_price = 50000 if 'BTC' in symbol else (3000 if 'ETH' in symbol else 1)
-        prices_series = base_price + np.random.normal(0, base_price * 0.005, limit).cumsum()
-        volumes_series = np.random.exponential(1000, limit) * (1 + np.random.normal(0, 0.2, limit))
+        if not all_data:
+            raise ValueError(f"No data could be fetched for {symbol} ({timeframe}) after all attempts.")
 
-        data = []
-        for i in range(limit):
-            dt = dates[i]
-            price = prices_series[i]
-            volume = volumes_series[i]
-            open_price = price * (1 + random.uniform(-0.001, 0.001))
-            high_price = max(open_price, price) * (1 + random.uniform(0.0005, 0.005))
-            low_price = min(open_price, price) * (1 - random.uniform(0.0005, 0.005))
-            close_price = price
-            data.append([dt.timestamp() * 1000, open_price, high_price, low_price, close_price, volume])
+        # Combine all chunks
+        combined_df = pd.concat(all_data, axis=0)
 
-        df = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close", "volume"])
-        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-        df.set_index('timestamp', inplace=True)
-        return df.ffill().bfill() 
+        # Remove duplicates and sort
+        combined_df = combined_df[~combined_df.index.duplicated(keep='first')]
+        combined_df.sort_index(inplace=True)
 
-    async def _feed_loop(self, callback: Callable[[Dict[str, Any]], Awaitable[None]]):
-        """Asynchronous internal loop for fetching real-time market data."""
-        feed_symbols = list(self.symbols) 
+        # Take only the most recent candles we need
+        if len(combined_df) > total_candles:
+            combined_df = combined_df.tail(total_candles)
 
-        # --- Lazy Load Markets for async client (only once per instance) ---
-        if self._crypto_ex_async and not self._markets_loaded_async: 
-            try:
-                logger.info(f"Attempting to load markets for CCXT Pro {self.exchange_id}...")
-                await self._crypto_ex_async.load_markets() 
-                self._markets_loaded_async = True 
-                logger.info(f"CCXT Pro {self.exchange_id} markets loaded successfully.")
-            except Exception as e:
-                logger.error(f"Failed to load markets for CCXT Pro {self.exchange_id}: {e}. "
-                             "Real-time feed will remain in demo mode.", exc_info=True)
-                self._crypto_ex_async = None 
+        # Data validation
+        self._validate_data_quality(combined_df, symbol, timeframe)
 
-        while self.running_feed:
-            market_data_batch = {}
-            for symbol in feed_symbols:
-                try:
-                    if self._crypto_ex_async and self._markets_loaded_async: # Ensure client is ready
-                        if symbol not in self._crypto_ex_async.symbols: 
-                            logger.warning(f"Symbol {symbol} not found on {self.exchange_id} exchange. Skipping real-time fetch.")
-                            market_data_batch[symbol] = self._generate_demo_ticker(symbol) 
-                            continue
+        # Cache the data
+        try:
+            with open(cache_file, 'wb') as f:
+                pickle.dump(combined_df, f)
+            self.logger.info(f"Cached {len(combined_df)} candles")
+        except Exception as e:
+            self.logger.warning(f"Failed to cache data: {e}")
 
-                        ticker = await self._crypto_ex_async.fetch_ticker(symbol)
-                        
-                        timestamp_ms = ticker.get('timestamp')
-                        timestamp_dt = datetime.fromtimestamp(timestamp_ms / 1000) if timestamp_ms is not None else datetime.now()
+        self.logger.info(f"Successfully fetched {len(combined_df)} candles for {symbol} ({timeframe})")
+        return combined_df
 
-                        market_data_batch[symbol] = {
-                            'symbol': symbol,
-                            'price': ticker['last'],
-                            'volume': ticker.get('baseVolume', 0),
-                            'change_24h': ticker.get('percentage', 0),
-                            'timestamp': timestamp_dt 
-                        }
-                    else: # Fallback to demo if async client is not available (or was disabled due to market load error)
-                        market_data_batch[symbol] = self._generate_demo_ticker(symbol)
-                except (ccxt.NetworkError, ccxt.ExchangeError) as e: 
-                    logger.warning(f"Failed to fetch real-time data for {symbol} ({self.exchange_id}): {e}. Generating demo data for this cycle.")
-                    market_data_batch[symbol] = self._generate_demo_ticker(symbol)
-                except Exception as e: 
-                    logger.warning(f"An unexpected error in _feed_loop for {symbol}: {e}. Generating demo data for this cycle.", exc_info=False)
-                    market_data_batch[symbol] = self._generate_demo_ticker(symbol)
-
-            if market_data_batch:
-                await callback(market_data_batch) # Pass batch to callback
-            await asyncio.sleep(settings.BROADCAST_INTERVAL_SECONDS)
-
-    def _generate_demo_ticker(self, symbol: str) -> Dict[str, Any]:
-        """Helper to generate synthetic ticker data for demo mode."""
-        base_price = 50000 if 'BTC' in symbol else (3000 if 'ETH' in symbol else 1)
-        price = base_price * (1 + random.uniform(-0.01, 0.01))
-        volume = random.uniform(500, 2000)
-        change_24h = random.uniform(-5, 5)
-        return {
-            'symbol': symbol,
-            'price': price,
-            'volume': volume,
-            'change_24h': change_24h,
-            'timestamp': datetime.now()
+    def _timeframe_to_ms(self, timeframe: str) -> int:
+        """Convert timeframe string to milliseconds"""
+        timeframe_map = {
+            '1m': 60 * 1000,
+            '5m': 5 * 60 * 1000,
+            '15m': 15 * 60 * 1000,
+            '30m': 30 * 60 * 1000,
+            '1h': 60 * 60 * 1000,
+            '4h': 4 * 60 * 60 * 1000,
+            '1d': 24 * 60 * 60 * 1000,
+            '1w': 7 * 24 * 60 * 60 * 1000,
         }
 
-    async def start_real_time_feed(self, callback: Callable[[Dict[str, Any]], Awaitable[None]]):
-        """Starts the real-time market data feed as an asyncio task."""
-        if not self.running_feed:
-            self.running_feed = True
-            try:
-                # Create the task without blocking the main event loop
-                asyncio.create_task(self._feed_loop(callback))
-                logger.info("Real-time crypto data feed task scheduled. (Can still take time to load markets/data)")
-            except Exception as e:
-                logger.error(f"Failed to start real-time data feed: {e}", exc_info=True)
-                self.running_feed = False
+        return timeframe_map.get(timeframe, 60 * 60 * 1000)  # Default to 1h
 
-    async def stop_feed(self):
-        """Stops the real-time market data feed."""
-        if not self.running_feed:
-            logger.info("Crypto data feed is already stopped.")
-            return
+    def _validate_data_quality(self, data: pd.DataFrame, symbol: str, timeframe: str):
+        """Validate the quality of fetched data"""
+        if len(data) < self.min_required_samples:
+            self.logger.warning(f"Insufficient data for {symbol} ({timeframe}): "
+                                f"{len(data)} samples (minimum: {self.min_required_samples})")
 
-        self.running_feed = False
-        logger.info("Signaling crypto data feed to stop...")
-        
-        if self._crypto_ex_async and hasattr(self._crypto_ex_async, 'close'):
-            try:
-                await self._crypto_ex_async.close()
-                logger.info("Closed CCXT async exchange connection.")
-            except Exception as e:
-                logger.error(f"Error closing CCXT async exchange connection: {e}", exc_info=True)
-        else: 
-            pass 
+        # Check for missing values
+        missing_ratio = data.isnull().sum().sum() / (len(data) * len(data.columns))
+        if missing_ratio > self.max_gap_tolerance:
+            self.logger.warning(f"High missing data ratio for {symbol} ({timeframe}): "
+                                f"{missing_ratio:.2%}")
 
-        logger.info("Crypto data feed stopped.")
+        # Check for data gaps
+        expected_interval = self._timeframe_to_ms(timeframe) / 1000
+        time_diffs = data.index.to_series().diff().dt.total_seconds()
+        large_gaps = (time_diffs > expected_interval * 2).sum()
+
+        if large_gaps > len(data) * 0.01:  # More than 1% gaps
+            self.logger.warning(f"Data gaps detected for {symbol} ({timeframe}): "
+                                f"{large_gaps} gaps")
+
+        # Check for anomalous values
+        for col in ['open', 'high', 'low', 'close']:
+            if col in data.columns:
+                # Check for zero or negative prices
+                invalid_prices = (data[col] <= 0).sum()
+                if invalid_prices > 0:
+                    self.logger.warning(f"Invalid prices in {col} for {symbol}: {invalid_prices} values")
+
+                # Check for extreme outliers (price changes > 50%)
+                returns = data[col].pct_change()
+                extreme_moves = (abs(returns) > 0.5).sum()
+                if extreme_moves > len(data) * 0.001:  # More than 0.1% extreme moves
+                    self.logger.warning(f"Extreme price movements detected in {col} for {symbol}: "
+                                        f"{extreme_moves} occurrences")
+
+    def fetch_multiple_symbols(self, symbols: List[str], timeframes: List[str],
+                              total_candles: int = 5000) -> Dict[str, Dict[str, pd.DataFrame]]:
+        """Fetch data for multiple symbols and timeframes in parallel"""
+        self.logger.info(f"Fetching data for {len(symbols)} symbols, {len(timeframes)} timeframes")
+
+        results = {}
+
+        # Create tasks for parallel execution
+        tasks = []
+        for symbol in symbols:
+            results[symbol] = {}
+            for timeframe in timeframes:
+                tasks.append((symbol, timeframe, total_candles))
+
+        # Execute tasks with thread pool
+        # Increased max_workers to allow more parallelism, but individual fetches have backoff
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            future_to_task = {
+                executor.submit(self.fetch_ohlcv_bulk, symbol, timeframe, total_candles): (symbol, timeframe)
+                for symbol, timeframe, total_candles in tasks
+            }
+
+            for future in as_completed(future_to_task):
+                symbol, timeframe = future_to_task[future]
+                try:
+                    data = future.result()
+                    results[symbol][timeframe] = data
+                    self.logger.info(f"Completed {symbol} ({timeframe}): {len(data)} candles")
+                except Exception as e:
+                    self.logger.error(f"Failed to fetch {symbol} ({timeframe}): {e}")
+                    results[symbol][timeframe] = pd.DataFrame() # Ensure an empty DataFrame is returned on failure
+
+        return results
+
+    def enrich_with_market_data(self, data: pd.DataFrame, symbol: str) -> pd.DataFrame:
+        """Enrich OHLCV data with additional market information"""
+        enriched_data = data.copy()
+
+        try:
+            # Add market cap data (if available)
+            market_cap = self._get_market_cap(symbol)
+            if market_cap:
+                enriched_data['market_cap'] = market_cap
+
+            # Add trading volume ranking
+            enriched_data['volume_rank'] = enriched_data['volume'].rolling(100).rank(pct=True)
+
+            # Add volatility regime classification
+            returns = enriched_data['close'].pct_change()
+            vol_20 = returns.rolling(20).std()
+            vol_percentile = vol_20.rolling(100).rank(pct=True)
+
+            enriched_data['volatility_regime'] = pd.cut(
+                vol_percentile,
+                bins=[0, 0.33, 0.67, 1.0],
+                labels=['Low', 'Medium', 'High']
+            )
+
+            # Add market session indicators (if timestamp available)
+            if isinstance(enriched_data.index, pd.DatetimeIndex):
+                enriched_data['market_session'] = self._classify_market_session(enriched_data.index)
+
+        except Exception as e:
+            self.logger.warning(f"Failed to enrich market data: {e}")
+
+        return enriched_data
+
+    def _get_market_cap(self, symbol: str) -> Optional[float]:
+        """Get market cap data from external API"""
+        try:
+            # Example using CoinGecko API (replace with your preferred source)
+            base_currency = symbol.split('/')[0].lower()
+
+            if base_currency in ['btc', 'eth', 'ada']:  # Only for major cryptos
+                url = f"https://api.coingecko.com/api/v3/simple/price"
+                params = {
+                    'ids': {'btc': 'bitcoin', 'eth': 'ethereum', 'ada': 'cardano'}[base_currency],
+                    'vs_currencies': 'usd',
+                    'include_market_cap': 'true'
+                }
+                self._rate_limit_local_pause() # Add local rate limit for external API calls
+                response = requests.get(url, params=params, timeout=10)
+                response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+                data = response.json()
+                return list(data.values())[0].get('usd_market_cap')
+
+        except requests.exceptions.RequestException as e:
+            self.logger.debug(f"Could not fetch market cap for {symbol} (Request Error): {e}")
+        except Exception as e:
+            self.logger.debug(f"Could not fetch market cap for {symbol} (Generic Error): {e}")
+
+        return None
+
+    def _classify_market_session(self, timestamps: pd.DatetimeIndex) -> pd.Series:
+        """Classify market sessions based on time"""
+        hours = timestamps.hour
+
+        conditions = [
+            (hours >= 0) & (hours < 8),    # Asian session
+            (hours >= 8) & (hours < 16),   # European session
+            (hours >= 16) & (hours < 24),  # American session
+        ]
+
+        choices = ['Asian', 'European', 'American']
+
+        return pd.Series(
+            np.select(conditions, choices, default='Unknown'),
+            index=timestamps,
+            name='market_session'
+        )
+
+    async def get_real_time_data(self, symbols: List[str]) -> Dict[str, Dict]:
+        """Get real-time ticker data for multiple symbols"""
+        real_time_data = {}
+
+        try:
+            for symbol in symbols:
+                # Asynchronous rate limiting might be handled by ccxt.pro's internal mechanisms
+                # but adding a small sleep here can provide an extra layer of caution
+                await asyncio.sleep(self.request_delay_sec)
+                ticker = await self.async_exchange.fetch_ticker(symbol)
+                real_time_data[symbol] = {
+                    'last_price': ticker['last'],
+                    'bid': ticker['bid'],
+                    'ask': ticker['ask'],
+                    'volume_24h': ticker['quoteVolume'],
+                    'change_24h': ticker['percentage'],
+                    'timestamp': datetime.now().isoformat()
+                }
+
+        except Exception as e:
+            self.logger.error(f"Failed to fetch real-time data: {e}")
+
+        return real_time_data
+
+    def get_data_summary(self, data: pd.DataFrame) -> Dict[str, Any]:
+        """Get comprehensive data summary"""
+        summary = {
+            'total_samples': len(data),
+            'date_range': {
+                'start': data.index.min().isoformat() if len(data) > 0 else None,
+                'end': data.index.max().isoformat() if len(data) > 0 else None,
+            },
+            'data_quality': {
+                'missing_values': data.isnull().sum().to_dict(),
+                'complete_rows': len(data) - data.isnull().any(axis=1).sum(),
+            },
+            'basic_stats': {
+                'price_range': {
+                    'min': float(data['close'].min()) if 'close' in data.columns else None,
+                    'max': float(data['close'].max()) if 'close' in data.columns else None,
+                    'mean': float(data['close'].mean()) if 'close' in data.columns else None,
+                },
+                'volume_stats': {
+                    'min': float(data['volume'].min()) if 'volume' in data.columns else None,
+                    'max': float(data['volume'].max()) if 'volume' in data.columns else None,
+                    'mean': float(data['volume'].mean()) if 'volume' in data.columns else None,
+                } if 'volume' in data.columns else None,
+            }
+        }
+
+        return summary
+
+    def cleanup_old_cache(self, max_age_days: int = 7):
+        """Remove old cache files"""
+        cutoff_time = datetime.now() - timedelta(days=max_age_days)
+        removed_count = 0
+
+        for cache_file in self.cache_dir.glob("*.pkl"):
+            file_time = datetime.fromtimestamp(cache_file.stat().st_mtime)
+            if file_time < cutoff_time:
+                try:
+                    cache_file.unlink()
+                    removed_count += 1
+                except Exception as e:
+                    self.logger.warning(f"Failed to remove cache file {cache_file}: {e}")
+
+        if removed_count > 0:
+            self.logger.info(f"Removed {removed_count} old cache files")
+
+    def close(self):
+        """Close exchange connections"""
+        try:
+            if self.async_exchange:
+                # Ensure the async exchange is properly closed.
+                # asyncio.run() needs to be called from a synchronous context,
+                # if close() is always called from a sync context this is fine.
+                # If close() can be called from an async context, you'd need to await it.
+                if self.async_exchange.session:
+                    asyncio.run(self.async_exchange.session.close())
+                asyncio.run(self.async_exchange.close()) # Call close on the exchange itself
+        except Exception as e:
+            self.logger.warning(f"Error closing async exchange: {e}")
+
+        self.logger.info("Data fetcher closed")

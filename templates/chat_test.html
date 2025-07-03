@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .test-area { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; margin: 5px; }
+        .result { margin-top: 10px; padding: 10px; background: #f5f5f5; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Chat API Test Page</h1>
+    
+    <div class="test-area">
+        <h3>Quick Tests</h3>
+        <button onclick="testMessage('help')">Test 'help'</button>
+        <button onclick="testMessage('status')">Test 'status'</button>
+        <button onclick="testMessage('hello')">Test 'hello'</button>
+        <div id="result" class="result"></div>
+    </div>
+    
+    <div class="test-area">
+        <h3>Custom Test</h3>
+        <input type="text" id="customMessage" placeholder="Type your message..." style="width: 300px; padding: 5px;">
+        <button onclick="testCustomMessage()">Send</button>
+    </div>
+
+    <script>
+        async function testMessage(message) {
+            const result = document.getElementById('result');
+            result.innerHTML = `🧪 Testing: "${message}"...`;
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                result.innerHTML = `
+                    <strong>Status:</strong> ${response.status}<br>
+                    <strong>Message:</strong> "${message}"<br>
+                `;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    result.innerHTML += `<strong>✅ Response:</strong> ${data.response || 'No response field'}<br>`;
+                    result.innerHTML += `<strong>📊 Full Data:</strong> <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    const errorText = await response.text();
+                    result.innerHTML += `<strong>❌ Error:</strong> ${errorText}<br>`;
+                }
+                
+            } catch (error) {
+                result.innerHTML += `<strong>❌ Exception:</strong> ${error.message}<br>`;
+            }
+        }
+        
+        function testCustomMessage() {
+            const message = document.getElementById('customMessage').value;
+            if (message.trim()) {
+                testMessage(message);
+            }
+        }
+        
+        // Auto-test on page load
+        setTimeout(() => {
+            testMessage('help');
+        }, 1000);
+    </script>
+</body>
+</html>

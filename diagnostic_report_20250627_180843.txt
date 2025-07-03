@@ -1,0 +1,68 @@
+CRYPTO TRADING BOT - SYSTEM DIAGNOSTIC REPORT
+==================================================
+Generated: 2025-06-27 18:08:43.199915
+
+Test: Basic Imports
+Status: PASSED
+Time: 0.09s
+------------------------------
+Test: Third-Party Imports
+Status: PASSED
+Time: 2.82s
+------------------------------
+Test: File Check: main.py
+Status: PASSED
+Time: 0.00s
+------------------------------
+Test: File Check: enhanced_trading_engine.py
+Status: PASSED
+Time: 0.00s
+------------------------------
+Test: File Check: core/enhanced_trading_engine.py
+Status: PASSED
+Time: 0.00s
+------------------------------
+Test: File Check: config.json
+Status: PASSED
+Time: 0.00s
+------------------------------
+Test: File Check: requirements.txt
+Status: PASSED
+Time: 0.00s
+------------------------------
+Test: Database Connection
+Status: PASSED
+Time: 0.02s
+------------------------------
+Test: Network Connection
+Status: PASSED
+Time: 0.68s
+------------------------------
+Test: Import fast_trading_engine
+Status: PASSED
+Time: 0.03s
+------------------------------
+Test: Import enhanced_ml_engine
+Status: PASSED
+Time: 0.00s
+------------------------------
+Test: Import fast_ml_engine
+Status: PASSED
+Time: 0.02s
+------------------------------
+Test: Import data_fetcher
+Status: PASSED
+Time: 0.22s
+------------------------------
+Test: Import risk_manager
+Status: PASSED
+Time: 0.25s
+------------------------------
+Test: Import notification_manager
+Status: PASSED
+Time: 0.00s
+------------------------------
+Test: Main App Import
+Status: PASSED
+Time: 1.14s
+------------------------------

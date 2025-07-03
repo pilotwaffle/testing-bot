@@ -1,0 +1,185 @@
+{
+  "timestamp": "2025-06-29T17:12:06.694492",
+  "dashboard_loading": {
+    "basic_connectivity": {
+      "success": true,
+      "status_code": 200,
+      "loading_time": 2.1120991706848145,
+      "content_length": 64955,
+      "content_type": "text/html; charset=utf-8"
+    },
+    "serves_html": true,
+    "content_sample": "<!--\nFile: dashboard.html\nLocation: E:\\Trade Chat Bot\\G Trading Bot\\templates\\dashboard.html\n\nElite Trading Bot V3.0 - Enhanced Dashboard Template (FIXED VERSION)\nFixed: CORS issues, template safety, memory leaks, browser compatibility\nSafe for production deployment\n-->\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Elite Trading Bot V3.0 - Enhanced Dashboard</title>\n    <link rel=\"icon\" hre",
+    "performance": {
+      "average_load_time": 2.0694629351298013,
+      "fastest_load": 2.059436798095703,
+      "slowest_load": 2.077127695083618,
+      "stability": "stable"
+    }
+  },
+  "template_analysis": {
+    "file_exists": true,
+    "file_size": 54700,
+    "sections": {
+      "ml_training_section": true,
+      "chat_interface": true,
+      "status_section": true,
+      "portfolio_section": true,
+      "javascript": true,
+      "css_styling": true,
+      "api_calls": true
+    },
+    "template_variables": [
+      "metrics",
+      "status",
+      "ml_status",
+      "info",
+      "symbol",
+      "active_strategies",
+      "model_key"
+    ],
+    "rendered_elements": {
+      "ml_training_buttons": true,
+      "chat_widget": true,
+      "status_indicators": true,
+      "navigation": true,
+      "interactive_elements": true,
+      "data_display": true
+    },
+    "rendered_content_length": 64903
+  },
+  "ml_functionality": {
+    "ml_status": {
+      "success": true,
+      "status": "success",
+      "models_count": 0,
+      "models": []
+    },
+    "train_lorentzian": {
+      "success": true,
+      "status": "error",
+      "message": "Unknown model type: lorentzian..."
+    },
+    "train_neural": {
+      "success": true,
+      "status": "error",
+      "message": "Unknown model type: neural..."
+    },
+    "train_sentiment": {
+      "success": true,
+      "status": "error",
+      "message": "Unknown model type: sentiment..."
+    },
+    "train_risk": {
+      "success": true,
+      "status": "error",
+      "message": "Unknown model type: risk..."
+    }
+  },
+  "chat_integration": {
+    "message_help": {
+      "success": true,
+      "response_length": 1119,
+      "response_preview": "Hello! \ud83d\udc4b I'm your AI trading assistant.  Your portfolio is currently performing well at +2.50% in th",
+      "has_response_field": true
+    },
+    "message_status": {
+      "success": true,
+      "response_length": 58,
+      "response_preview": "I'm here to help with your trading questions and analysis.",
+      "has_response_field": true
+    },
+    "message_dashboard_test": {
+      "success": true,
+      "response_length": 58,
+      "response_preview": "I'm here to help with your trading questions and analysis.",
+      "has_response_field": true
+    },
+    "chat_page": {
+      "success": true,
+      "status_code": 200,
+      "content_length": 5095
+    }
+  },
+  "static_files": {
+    "_static_js_chat.js": {
+      "success": true,
+      "size": 12740,
+      "content_type": "application/javascript"
+    },
+    "_static_js_dashboard.js": {
+      "success": true,
+      "size": 16488,
+      "content_type": "application/javascript"
+    },
+    "_static_css_style.css": {
+      "success": true,
+      "size": 19052,
+      "content_type": "text/css; charset=utf-8"
+    },
+    "_static_css_dashboard.css": {
+      "success": false,
+      "status_code": 404,
+      "note": "File may not exist or path incorrect"
+    }
+  },
+  "api_connectivity": {
+    "_health": {
+      "success": true,
+      "response_type": "json",
+      "data_keys": [
+        "status",
+        "timestamp",
+        "components",
+        "system"
+      ]
+    },
+    "_api_ml_status": {
+      "success": true,
+      "response_type": "json",
+      "data_keys": [
+        "status",
+        "lorentzian_classifier",
+        "neural_network",
+        "social_sentiment",
+        "risk_assessment",
+        "timestamp"
+      ]
+    },
+    "_api_portfolio": {
+      "success": true,
+      "response_type": "json",
+      "data_keys": [
+        "status",
+        "portfolio",
+        "timestamp"
+      ]
+    },
+    "_api_system_info": {
+      "success": false,
+      "status_code": 404
+    },
+    "_status": {
+      "success": true,
+      "response_type": "json",
+      "data_keys": [
+        "status",
+        "bot_name",
+        "version",
+        "components",
+        "uptime",
+        "timestamp"
+      ]
+    }
+  },
+  "performance": {},
+  "overall_score": 99.5,
+  "score_breakdown": {
+    "dashboard_loading": 25,
+    "template_analysis": 19,
+    "ml_functionality": 20,
+    "chat_integration": 20,
+    "static_files": 7.5,
+    "api_connectivity": 8
+  }
+}

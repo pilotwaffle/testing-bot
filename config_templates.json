@@ -1,0 +1,333 @@
+# config_templates.json - Configuration Templates
+{
+  "bot_config.json": {
+    "exchange": {
+      "name": "kraken",
+      "api_key": "${KRAKEN_API_KEY}",
+      "secret": "${KRAKEN_SECRET}",
+      "sandbox": "${KRAKEN_SANDBOX}",
+      "rate_limit": 1200,
+      "timeout": 30000
+    },
+    "paths": {
+      "data_cache_dir": "data/cache/",
+      "model_save_path": "models/",
+      "performance_log_path": "logs/",
+      "strategy_config_path": "config/strategy_config.json",
+      "monitor_config_path": "config/monitor_config.json"
+    },
+    "trading": {
+      "symbols": "${TRADING_SYMBOLS}",
+      "timeframes": "${TRADING_TIMEFRAMES}",
+      "live_trading_enabled": "${LIVE_TRADING_ENABLED}",
+      "signal_generation_interval_minutes": 15,
+      "max_concurrent_positions": 3,
+      "portfolio_allocation": {
+        "BTC/USD": 0.4,
+        "ETH/USD": 0.35,
+        "ADA/USD": 0.25
+      }
+    },
+    "risk_management": {
+      "max_portfolio_risk": "${MAX_PORTFOLIO_RISK}",
+      "max_daily_loss": 0.05,
+      "emergency_stop_loss": "${EMERGENCY_STOP_LOSS}",
+      "position_timeout_hours": 72,
+      "max_drawdown_threshold": 0.20
+    },
+    "notifications": {
+      "email_enabled": "${EMAIL_ENABLED}",
+      "email_settings": {
+        "smtp_server": "${SMTP_SERVER}",
+        "smtp_port": "${SMTP_PORT}",
+        "sender_email": "${SENDER_EMAIL}",
+        "sender_password": "${SENDER_PASSWORD}",
+        "recipient_email": "${RECIPIENT_EMAIL}"
+      },
+      "webhook_enabled": false,
+      "webhook_url": "${SLACK_WEBHOOK_URL}",
+      "log_all_signals": true,
+      "alert_on_critical_events": true
+    },
+    "data_collection": {
+      "historical_data_points": 2000,
+      "real_time_updates": true,
+      "cache_validity_hours": 6,
+      "backup_data_enabled": true,
+      "data_validation_enabled": true
+    }
+  },
+  
+  "strategy_config.json": {
+    "risk_management": {
+      "max_risk_per_trade": "${MAX_RISK_PER_TRADE}",
+      "max_portfolio_risk": "${MAX_PORTFOLIO_RISK}",
+      "max_correlation_exposure": 0.6,
+      "max_drawdown_threshold": 0.15,
+      "stop_loss_multiplier": 2.0,
+      "take_profit_multiplier": 3.0,
+      "trailing_stop_enabled": true,
+      "risk_free_rate": 0.02,
+      "volatility_adjustment": true
+    },
+    "signal_generation": {
+      "min_confidence_threshold": 0.6,
+      "ensemble_weight_ml": 0.6,
+      "ensemble_weight_technical": 0.3,
+      "ensemble_weight_sentiment": 0.1,
+      "signal_strength_thresholds": {
+        "very_weak": 0.45,
+        "weak": 0.55,
+        "neutral": 0.65,
+        "strong": 0.75,
+        "very_strong": 0.85
+      },
+      "confirmation_required": true,
+      "multi_timeframe_analysis": true,
+      "market_regime_filter": true
+    },
+    "position_sizing": {
+      "base_position_size": 0.1,
+      "kelly_criterion_enabled": true,
+      "volatility_adjustment": true,
+      "confidence_scaling": true,
+      "max_position_size": 0.25,
+      "min_position_size": 0.01,
+      "correlation_adjustment": true
+    },
+    "timeframe_weights": {
+      "1h": 0.2,
+      "4h": 0.3,
+      "1d": 0.5
+    },
+    "market_conditions": {
+      "volatility_lookback": 20,
+      "trend_lookback": 50,
+      "volume_lookback": 10,
+      "regime_detection_enabled": true
+    },
+    "technical_indicators": {
+      "rsi_period": 14,
+      "rsi_overbought": 70,
+      "rsi_oversold": 30,
+      "ma_short_period": 20,
+      "ma_long_period": 50,
+      "bollinger_period": 20,
+      "bollinger_std": 2,
+      "macd_fast": 12,
+      "macd_slow": 26,
+      "macd_signal": 9
+    }
+  },
+  
+  "monitor_config.json": {
+    "database": {
+      "path": "data/performance.db",
+      "backup_enabled": true,
+      "backup_interval_hours": 24
+    },
+    "monitoring": {
+      "evaluation_interval_minutes": 30,
+      "min_trades_for_evaluation": 10,
+      "alert_on_performance_drop": true,
+      "save_detailed_logs": true,
+      "real_time_monitoring": true
+    },
+    "performance_thresholds": {
+      "accuracy_warning": 0.55,
+      "accuracy_critical": 0.45,
+      "profit_warning": -0.02,
+      "profit_critical": -0.05,
+      "max_consecutive_losses": 5,
+      "sharpe_ratio_warning": 0.5,
+      "max_drawdown_warning": 0.10,
+      "max_drawdown_critical": 0.20
+    },
+    "adaptive_learning": {
+      "auto_retrain_enabled": true,
+      "retrain_on_accuracy_drop": 0.1,
+      "retrain_on_profit_drop": 0.03,
+      "feature_adaptation_enabled": true,
+      "market_regime_detection": true,
+      "performance_decay_threshold": 0.05,
+      "min_trades_for_retrain": 50
+    },
+    "alerts": {
+      "email_enabled": false,
+      "webhook_url": null,
+      "log_level": "WARNING",
+      "alert_categories": {
+        "performance": true,
+        "risk": true,
+        "system": true,
+        "trading": true
+      }
+    }
+  },
+  
+  "training_config.json": {
+    "exchange": {
+      "name": "kraken"
+    },
+    "paths": {
+      "model_save_path": "models/",
+      "performance_log_path": "logs/",
+      "cache_dir": "data/cache/",
+      "config_dir": "config/"
+    },
+    "trading": {
+      "symbols": ["BTC/USD", "ETH/USD", "ADA/USD"],
+      "timeframes": ["1h", "4h", "1d"]
+    },
+    "training": {
+      "min_data_points": 1000,
+      "retrain_interval_hours": 24,
+      "performance_threshold": 0.6,
+      "early_stopping_patience": 15,
+      "validation_split": 0.15,
+      "test_split": 0.15,
+      "cross_validation_folds": 5,
+      "hyperparameter_tuning": true
+    },
+    "model_parameters": {
+      "neural_network": {
+        "sequence_length": 60,
+        "batch_size": 32,
+        "epochs": 100,
+        "learning_rate": 0.001,
+        "dropout_rate": 0.2,
+        "lstm_units": [128, 64, 32],
+        "dense_units": [64, 32],
+        "attention_enabled": true
+      },
+      "random_forest": {
+        "n_estimators": 200,
+        "max_depth": 15,
+        "min_samples_split": 5,
+        "min_samples_leaf": 2,
+        "max_features": "sqrt"
+      },
+      "gradient_boosting": {
+        "n_estimators": 100,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "subsample": 0.8
+      }
+    },
+    "feature_engineering": {
+      "technical_indicators": true,
+      "lag_features": true,
+      "rolling_statistics": true,
+      "price_patterns": true,
+      "volume_analysis": true,
+      "volatility_features": true,
+      "sentiment_features": false,
+      "market_microstructure": false
+    },
+    "adaptive_learning": {
+      "enable_auto_retrain": true,
+      "performance_decay_threshold": 0.05,
+      "min_trades_for_evaluation": 50,
+      "feature_importance_threshold": 0.01,
+      "model_ensemble_weights": {
+        "dynamic_weighting": true,
+        "performance_based": true,
+        "confidence_weighted": true
+      }
+    },
+    "data_preprocessing": {
+      "scaling_method": "robust",
+      "handle_missing_data": "interpolate",
+      "outlier_detection": true,
+      "outlier_method": "isolation_forest",
+      "feature_selection": true,
+      "feature_selection_method": "mutual_info"
+    }
+  },
+  
+  "dashboard_config.json": {
+    "server": {
+      "host": "localhost",
+      "port": 8050,
+      "debug": true,
+      "auto_reload": true
+    },
+    "security": {
+      "authentication_enabled": false,
+      "username": "admin",
+      "password": "your_secure_password",
+      "session_timeout_minutes": 60
+    },
+    "display": {
+      "refresh_interval_seconds": 30,
+      "max_chart_points": 500,
+      "default_timeframe": "1h",
+      "theme": "dark",
+      "show_detailed_logs": true
+    },
+    "data_sources": {
+      "performance_db_path": "data/performance.db",
+      "log_files_path": "logs/",
+      "model_path": "models/",
+      "cache_path": "data/cache/"
+    },
+    "charts": {
+      "price_chart_enabled": true,
+      "performance_chart_enabled": true,
+      "signals_chart_enabled": true,
+      "risk_chart_enabled": true,
+      "ml_predictions_chart_enabled": true
+    },
+    "notifications": {
+      "browser_notifications": true,
+      "sound_alerts": false,
+      "email_reports": false
+    }
+  },
+  
+  "backtest_config.json": {
+    "data": {
+      "start_date": "2023-01-01",
+      "end_date": "2024-12-31",
+      "symbols": ["BTC/USD", "ETH/USD", "ADA/USD"],
+      "timeframes": ["1h", "4h", "1d"],
+      "data_source": "historical_cache"
+    },
+    "execution": {
+      "initial_capital": 10000,
+      "commission_rate": 0.001,
+      "slippage_rate": 0.0005,
+      "execution_delay_ms": 100,
+      "partial_fills_enabled": true
+    },
+    "strategy": {
+      "use_trained_models": true,
+      "model_path": "models/",
+      "strategy_config_path": "config/strategy_config.json",
+      "walk_forward_analysis": true,
+      "rebalancing_frequency": "monthly"
+    },
+    "risk_management": {
+      "max_portfolio_risk": 0.10,
+      "max_position_size": 0.25,
+      "stop_loss_enabled": true,
+      "take_profit_enabled": true,
+      "trailing_stop_enabled": true
+    },
+    "analysis": {
+      "benchmark_symbol": "BTC/USD",
+      "risk_free_rate": 0.02,
+      "calculate_sharpe": true,
+      "calculate_sortino": true,
+      "calculate_calmar": true,
+      "monte_carlo_simulations": 1000
+    },
+    "output": {
+      "save_trades": true,
+      "save_portfolio_values": true,
+      "save_performance_metrics": true,
+      "generate_plots": true,
+      "output_directory": "backtest_results/"
+    }
+  }
+}

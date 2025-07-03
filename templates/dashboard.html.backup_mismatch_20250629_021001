@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Trading Bot V3.0 - Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #007bff;
+        }
+        .status-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 5px;
+        }
+        .ml-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #d4edda;
+            border-radius: 5px;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-online { background-color: #28a745; }
+        .status-offline { background-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Elite Trading Bot V3.0</h1>
+            <p>Industrial Crypto Trading Dashboard</p>
+        </div>
+        
+        <div class="status-section">
+            <h2>📊 System Status</h2>
+            <p><span class="status-indicator status-online"></span>Server: Running</p>
+            <p><span class="status-indicator status-online"></span>Dashboard: Active</p>
+            <button class="button" onclick="checkStatus()">Check Status</button>
+            <button class="button" onclick="getMarketData()">Market Data</button>
+        </div>
+        
+        <div class="ml-section" id="ml-training-section">
+            <h2>🤖 ML Training</h2>
+            <p>Machine Learning Models:</p>
+            
+            {% if ml_status and ml_status.models %}
+                {% for model in ml_status.models %}
+                <div style="margin: 10px 0;">
+                    <strong>{{ model.name }}:</strong> {{ model.status }}
+                    <button class="button" onclick="trainModel('{{ model.name.lower().replace(' ', '_') }}')">
+                        Train {{ model.name }}
+                    </button>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div>
+                <button class="button" onclick="trainModel('lorentzian')">Train Lorentzian Classifier</button>
+                <button class="button" onclick="trainModel('neural')">Train Neural Network</button>
+                <button class="button" onclick="trainModel('sentiment')">Train Social Sentiment</button>
+                <button class="button" onclick="trainModel('risk')">Train Risk Assessment</button>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="status-section">
+            <h2>💬 Chat Interface</h2>
+            <p>AI-powered trading assistant</p>
+            <button class="button" onclick="window.location.href='/chat'">Open Chat</button>
+        </div>
+        
+        <div id="response-area" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; display: none;">
+            <h3>Response:</h3>
+            <pre id="response-content"></pre>
+        </div>
+    </div>
+
+    <script>
+        async function checkStatus() {
+            showResponse('Checking system status...');
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                showResponse(JSON.stringify(data, null, 2));
+            } catch (error) {
+                showResponse('Error: ' + error.message);
+            }
+        }
+        
+        async function getMarketData() {
+            showResponse('Fetching market data...');
+            try {
+                const response = await fetch('/api/market-data');
+                if (response.ok) {
+                    const data = await response.json();
+                    showResponse(JSON.stringify(data, null, 2));
+                } else {
+                    showResponse('Market data endpoint not available yet');
+                }
+            } catch (error) {
+                showResponse('Error: ' + error.message);
+            }
+        }
+        
+        async function trainModel(modelType) {
+            showResponse(`Starting training for ${modelType} model...`);
+            try {
+                const response = await fetch(`/api/ml/train/${modelType}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ test_mode: true })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showResponse(JSON.stringify(data, null, 2));
+                } else {
+                    showResponse(`Training endpoint for ${modelType} not available yet`);
+                }
+            } catch (error) {
+                showResponse('Error: ' + error.message);
+            }
+        }
+        
+        function showResponse(content) {
+            const responseArea = document.getElementById('response-area');
+            const responseContent = document.getElementById('response-content');
+            responseContent.textContent = content;
+            responseArea.style.display = 'block';
+            responseArea.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

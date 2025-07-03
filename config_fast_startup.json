@@ -1,0 +1,48 @@
+{
+    "startup_optimization": {
+        "enabled": true,
+        "lazy_loading": true,
+        "async_initialization": true,
+        "skip_non_essential": true
+    },
+    "trading": {
+        "max_open_trades": 3,
+        "stake_amount": 100,
+        "dry_run": true,
+        "dry_run_wallet": 10000,
+        "timeframe": "1h",
+        "fast_startup": true
+    },
+    "exchange": {
+        "name": "binance",
+        "sandbox": true,
+        "enabled": false,
+        "lazy_connect": true,
+        "connection_timeout": 5
+    },
+    "ml": {
+        "enabled": true,
+        "lazy_loading": true,
+        "skip_tensorflow_on_startup": true,
+        "preload_models": false,
+        "async_training": true
+    },
+    "database": {
+        "enabled": false,
+        "lazy_connect": true,
+        "connection_pool_size": 1
+    },
+    "notifications": {
+        "enabled": false,
+        "skip_initialization": true
+    },
+    "data_fetcher": {
+        "cache_enabled": true,
+        "async_fetching": true,
+        "startup_cache_warm": false
+    },
+    "risk_management": {
+        "enabled": true,
+        "lazy_initialization": true
+    }
+}

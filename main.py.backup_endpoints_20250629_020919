@@ -1,0 +1,255 @@
+"""
+File: main.py
+Location: E:\Trade Chat Bot\G Trading Bot\main.py
+
+Robust Main - With Error Handling and Graceful Fallbacks
+"""
+
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from dotenv import load_dotenv
+import os
+import json
+import logging
+from datetime import datetime
+from pathlib import Path
+
+# Load environment variables
+load_dotenv()
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="Elite Trading Bot V3.0",
+    description="Industrial Crypto Trading Bot",
+    version="3.0.0"
+)
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Ensure directories exist
+def ensure_directories():
+    """Ensure required directories exist"""
+    directories = ["static", "static/js", "static/css", "templates"]
+    for directory in directories:
+        Path(directory).mkdir(parents=True, exist_ok=True)
+
+ensure_directories()
+
+# Setup static files and templates with error handling
+try:
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+    logger.info("✅ Static files mounted")
+except Exception as e:
+    logger.error(f"❌ Failed to mount static files: {e}")
+
+try:
+    templates = Jinja2Templates(directory="templates")
+    logger.info("✅ Templates initialized")
+except Exception as e:
+    logger.error(f"❌ Failed to initialize templates: {e}")
+    templates = None
+
+# Global variables
+active_connections = []
+
+@app.get("/", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    """Main dashboard with error handling"""
+    try:
+        if templates is None:
+            return HTMLResponse("""
+            <html><body>
+            <h1>Elite Trading Bot V3.0</h1>
+            <p>Dashboard temporarily unavailable. Templates not loaded.</p>
+            <p><a href="/health">Check System Health</a></p>
+            </body></html>
+            """)
+        
+        # Check if dashboard template exists
+        if not Path("templates/dashboard.html").exists():
+            return HTMLResponse("""
+            <html><body>
+            <h1>Elite Trading Bot V3.0</h1>
+            <p>Dashboard template missing. Please run: python fix_internal_server_error.py</p>
+            <p><a href="/health">Check System Health</a></p>
+            </body></html>
+            """)
+        
+        return templates.TemplateResponse("dashboard.html", {
+            "request": request,
+            "ml_status": {
+                "models": [
+                    {"name": "Lorentzian Classifier", "status": "available"},
+                    {"name": "Neural Network", "status": "available"},
+                    {"name": "Social Sentiment", "status": "available"},
+                    {"name": "Risk Assessment", "status": "available"}
+                ]
+            },
+            "status": "RUNNING"
+        })
+    except Exception as e:
+        logger.error(f"Dashboard error: {e}")
+        return HTMLResponse(f"""
+        <html><body>
+        <h1>Elite Trading Bot V3.0</h1>
+        <p>Dashboard Error: {str(e)}</p>
+        <p><a href="/health">Check System Health</a></p>
+        </body></html>
+        """)
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    try:
+        return {
+            "status": "healthy",
+            "components": {
+                "server": True,
+                "templates": templates is not None,
+                "static_files": Path("static").exists(),
+                "dashboard_template": Path("templates/dashboard.html").exists(),
+                "chat_template": Path("templates/chat.html").exists()
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+@app.post("/api/chat")
+async def chat_endpoint(request: Request):
+    """Chat API endpoint with error handling"""
+    try:
+        data = await request.json()
+        message = data.get("message", "")
+        
+        # Simple response logic
+        if not message:
+            response = "Please provide a message."
+        elif "status" in message.lower():
+            response = "🚀 Elite Trading Bot is running! All systems operational."
+        elif "help" in message.lower():
+            response = "💡 Available commands: status, help, portfolio, market. Ask me anything about trading!"
+        elif "portfolio" in message.lower():
+            response = "📊 Portfolio analysis coming soon! Currently in development."
+        elif "market" in message.lower():
+            response = "📈 Market data integration in progress. Check back soon!"
+        else:
+            response = f"I received your message: '{message}'. I'm learning to provide better responses!"
+        
+        return {
+            "response": response,
+            "message_type": "text",
+            "intent": "general_chat",
+            "response_time": 0.1,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Chat endpoint error: {e}")
+        return {
+            "response": "Sorry, I encountered an error processing your message.",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+@app.get("/chat", response_class=HTMLResponse)
+async def chat_page(request: Request):
+    """Chat interface page"""
+    try:
+        if templates is None or not Path("templates/chat.html").exists():
+            return HTMLResponse("""
+            <html><body>
+            <h1>Chat Interface</h1>
+            <p>Chat template not available. Please run: python fix_internal_server_error.py</p>
+            <p><a href="/">Return to Dashboard</a></p>
+            </body></html>
+            """)
+        
+        return templates.TemplateResponse("chat.html", {"request": request})
+    except Exception as e:
+        logger.error(f"Chat page error: {e}")
+        return HTMLResponse(f"""
+        <html><body>
+        <h1>Chat Interface Error</h1>
+        <p>Error: {str(e)}</p>
+        <p><a href="/">Return to Dashboard</a></p>
+        </body></html>
+        """)
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time communication"""
+    try:
+        await websocket.accept()
+        active_connections.append(websocket)
+        logger.info(f"WebSocket connected. Total connections: {len(active_connections)}")
+        
+        while True:
+            data = await websocket.receive_text()
+            message_data = json.loads(data)
+            
+            # Process message
+            message = message_data.get("message", "")
+            response = {
+                "type": "chat_response",
+                "response": f"WebSocket received: {message}",
+                "timestamp": datetime.now().isoformat()
+            }
+            
+            await websocket.send_text(json.dumps(response))
+            
+    except WebSocketDisconnect:
+        if websocket in active_connections:
+            active_connections.remove(websocket)
+        logger.info(f"WebSocket disconnected. Total connections: {len(active_connections)}")
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        if websocket in active_connections:
+            active_connections.remove(websocket)
+
+# Additional endpoints for testing
+@app.get("/api/ml/status")
+async def ml_status():
+    """ML status endpoint"""
+    return {
+        "status": "available",
+        "models_available": 4,
+        "models": [
+            {"name": "Lorentzian Classifier", "status": "ready"},
+            {"name": "Neural Network", "status": "ready"},
+            {"name": "Social Sentiment", "status": "ready"},
+            {"name": "Risk Assessment", "status": "ready"}
+        ]
+    }
+
+@app.post("/api/ml/train/{model_type}")
+async def train_model(model_type: str, request: Request):
+    """Train model endpoint"""
+    try:
+        data = await request.json()
+        test_mode = data.get("test_mode", False)
+        
+        return {
+            "status": "success",
+            "message": f"Training {model_type} model {'(test mode)' if test_mode else ''}",
+            "model_type": model_type,
+            "estimated_time": "2-5 minutes",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

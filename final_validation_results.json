@@ -1,0 +1,241 @@
+{
+  "metadata": {
+    "analysis_date": "2025-06-29T22:29:48.155448",
+    "config": {
+      "optimization_window_days": 180,
+      "validation_window_days": 45,
+      "step_size_days": 30,
+      "target_symbols": [
+        "BTC/USD"
+      ],
+      "timeframes": [
+        "4h"
+      ],
+      "models_to_test": [
+        "gradient_boosting"
+      ]
+    }
+  },
+  "summary": {
+    "total_iterations": 8,
+    "avg_validation_accuracy": 1.0,
+    "std_validation_accuracy": 0.0,
+    "best_validation_accuracy": 1.0,
+    "worst_validation_accuracy": 1.0,
+    "avg_profit_factor": 1.0510004140438913,
+    "consistency_score": 1.0,
+    "by_symbol": {
+      "mean": {
+        "BTC/USD": 1.0
+      },
+      "std": {
+        "BTC/USD": 0.0
+      },
+      "count": {
+        "BTC/USD": 8
+      }
+    },
+    "by_timeframe": {
+      "mean": {
+        "4h": 1.0
+      },
+      "std": {
+        "4h": 0.0
+      },
+      "count": {
+        "4h": 8
+      }
+    },
+    "by_model": {
+      "mean": {
+        "gradient_boosting": 1.0
+      },
+      "std": {
+        "gradient_boosting": 0.0
+      },
+      "count": {
+        "gradient_boosting": 8
+      }
+    },
+    "top_performers": [
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      },
+      {
+        "symbol": "BTC/USD",
+        "timeframe": "4h",
+        "model_name": "gradient_boosting",
+        "validation_accuracy": 1.0
+      }
+    ]
+  },
+  "detailed_results": [
+    {
+      "start_date": "2023-11-17",
+      "end_date": "2024-06-29",
+      "optimization_period": "2023-11-17 to 2024-05-15",
+      "validation_period": "2024-05-15 to 2024-06-29",
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "train_accuracy": 1.0,
+      "validation_accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "trade_count": 671,
+      "profit_factor": 1.0510004140438913
+    },
+    {
+      "start_date": "2023-12-17",
+      "end_date": "2024-07-29",
+      "optimization_period": "2023-12-17 to 2024-06-14",
+      "validation_period": "2024-06-14 to 2024-07-29",
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "train_accuracy": 1.0,
+      "validation_accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "trade_count": 671,
+      "profit_factor": 1.0510004140438913
+    },
+    {
+      "start_date": "2024-01-16",
+      "end_date": "2024-08-28",
+      "optimization_period": "2024-01-16 to 2024-07-14",
+      "validation_period": "2024-07-14 to 2024-08-28",
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "train_accuracy": 1.0,
+      "validation_accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "trade_count": 671,
+      "profit_factor": 1.0510004140438913
+    },
+    {
+      "start_date": "2024-02-15",
+      "end_date": "2024-09-27",
+      "optimization_period": "2024-02-15 to 2024-08-13",
+      "validation_period": "2024-08-13 to 2024-09-27",
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "train_accuracy": 1.0,
+      "validation_accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "trade_count": 671,
+      "profit_factor": 1.0510004140438913
+    },
+    {
+      "start_date": "2024-03-16",
+      "end_date": "2024-10-27",
+      "optimization_period": "2024-03-16 to 2024-09-12",
+      "validation_period": "2024-09-12 to 2024-10-27",
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "train_accuracy": 1.0,
+      "validation_accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "trade_count": 671,
+      "profit_factor": 1.0510004140438913
+    },
+    {
+      "start_date": "2024-04-15",
+      "end_date": "2024-11-26",
+      "optimization_period": "2024-04-15 to 2024-10-12",
+      "validation_period": "2024-10-12 to 2024-11-26",
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "train_accuracy": 1.0,
+      "validation_accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "trade_count": 671,
+      "profit_factor": 1.0510004140438913
+    },
+    {
+      "start_date": "2024-05-15",
+      "end_date": "2024-12-26",
+      "optimization_period": "2024-05-15 to 2024-11-11",
+      "validation_period": "2024-11-11 to 2024-12-26",
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "train_accuracy": 1.0,
+      "validation_accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "trade_count": 671,
+      "profit_factor": 1.0510004140438913
+    },
+    {
+      "start_date": "2024-06-14",
+      "end_date": "2025-01-25",
+      "optimization_period": "2024-06-14 to 2024-12-11",
+      "validation_period": "2024-12-11 to 2025-01-25",
+      "symbol": "BTC/USD",
+      "timeframe": "4h",
+      "model_name": "gradient_boosting",
+      "train_accuracy": 1.0,
+      "validation_accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "trade_count": 671,
+      "profit_factor": 1.0510004140438913
+    }
+  ]
+}
