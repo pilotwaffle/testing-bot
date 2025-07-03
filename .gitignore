@@ -1,0 +1,23 @@
+# Ignore Python virtual environments
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Database and other data
+*.db
+*.sqlite
+
+# VSCode
+.vscode/
